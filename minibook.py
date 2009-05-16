@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+""" Minibook: the Facebook(TM) status updater
+(C) 2009 Gergely Imreh <imrehg@gmail.com>
+"""
 
 import pygtk
 pygtk.require('2.0')

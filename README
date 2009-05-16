@@ -49,3 +49,11 @@ where you replace "YOUR_API_KEY" appropriately
 
 5) Run app, if everythings fine it should start the browser to log you 
 in, after which you can update your profile!
+
+
+Licensing
+---------
+Minibook is released under the MIT License, basically giving you 
+complete control of how do you use, modify and share this code, as long 
+as the appropriate copyright information is maintained.
+See the file "LICENSE.txt" for detailed terms and conditions for usage.
