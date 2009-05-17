@@ -24,6 +24,13 @@ class MainWindow:
 
             textfield.set_text("")
 
+    def count(self, text):
+        start = text.get_start_iter()
+        end = text.get_end_iter()
+        thetext = text.get_text(start, end)
+        self.count_label.set_text('(%d)' % (160 - len(thetext)))
+        return True
+
     def __init__(self,facebook):
         # create a new window
         window = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -34,12 +41,21 @@ class MainWindow:
         vbox = gtk.VBox(False, 0)
         window.add(vbox)
         vbox.show()
+
+        hbox = gtk.HBox(False, 0)
         
         label = gtk.Label("What's on your mind?")
-        vbox.pack_start(label, True, True, 0)
+        hbox.pack_start(label, True, True, 0)
         label.show()
+        self.count_label = gtk.Label("(160)")
+        hbox.pack_start(self.count_label, True, True, 0)
+        self.count_label.show()
+        vbox.add(hbox)
+        hbox.show()
         
         self.entry = gtk.TextView()
+        text = self.entry.get_buffer()
+        text.connect('changed',self.count)
         vbox.pack_start(self.entry, True, True, 0)
         self.entry.show()
 
