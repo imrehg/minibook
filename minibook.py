@@ -10,16 +10,19 @@ from facebook import Facebook
 
 class MainWindow:
     def enter_callback(self, widget, entry):
-        entry_text = entry.get_text()
+        entry_text = entry.get_buffer().get_text()
         print "Entry contents: %s\n" % entry_text
         
     def sendupdate(self):
-        entry_text = self.entry.get_text()
+        textfield = self.entry.get_buffer()
+        start = textfield.get_start_iter()
+        end = textfield.get_end_iter()
+        entry_text = textfield.get_text(start, end)
         if entry_text != "" :
             print "Sent entry contents: %s\n" % entry_text
             self._facebook.status.set([entry_text],[self._facebook.uid])
 
-            self.entry.set_text("")
+            textfield.set_text("")
 
     def __init__(self,facebook):
         # create a new window
@@ -36,10 +39,7 @@ class MainWindow:
         vbox.pack_start(label, True, True, 0)
         label.show()
         
-        self.entry = gtk.Entry()
-        self.entry.set_max_length(160)
-        self.entry.connect("activate", self.enter_callback, self.entry)
-        self.entry.set_text("")
+        self.entry = gtk.TextView()
         vbox.pack_start(self.entry, True, True, 0)
         self.entry.show()
 
