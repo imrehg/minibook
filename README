@@ -1,17 +1,19 @@
 minibook
 --------
 
-A Facebook (FB) status updater and lister in Python. Uses PyFacebook to 
-make FB API calls.
+A cross-platform desktop Facebook (FB) status updater and lister 
+written in Python. Uses PyFacebook to make FB API calls.
 
 
 Requirements
 ------------
 
+python
 pygtk
 pyfacebook: http://github.com/sciyoshi/pyfacebook/tree/master
 
-
+minibook should run on all platforms where these are available,
+currently tested on Linux and Windows XP.
 
 How to use it for your own good?
 --------------------------------
@@ -53,7 +55,7 @@ in, after which you can update your profile!
 
 Licensing
 ---------
-Minibook is released under the MIT License, basically giving you 
-complete control of how do you use, modify and share this code, as long 
-as the appropriate copyright information is maintained.
+Minibook, it's source code and artwork is released under the MIT License,
+basically giving you complete control of how do you use, modify and share
+this code, as long as the appropriate copyright information is maintained.
 See the file "LICENSE.txt" for detailed terms and conditions for usage.
