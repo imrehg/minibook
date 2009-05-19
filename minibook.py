@@ -33,13 +33,13 @@ class MainWindow:
 
     def __init__(self,facebook):
         # create a new window
-        window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        window.set_size_request(400, 100)
-        window.set_title("Minibook")
-        window.connect("delete_event", lambda w,e: gtk.main_quit())
+        self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.window.set_size_request(400, 100)
+        self.window.set_title("Minibook")
+        self.window.connect("delete_event", lambda w,e: gtk.main_quit())
 
         vbox = gtk.VBox(False, 0)
-        window.add(vbox)
+        self.window.add(vbox)
         vbox.show()
 
         hbox = gtk.HBox(False, 0)
@@ -77,13 +77,22 @@ class MainWindow:
         button.grab_default()
         button.show()
         
-        window.show()
+        self.window.show()
         self._facebook = facebook
         
         self._app_icon = 'minibook.png'
         self._systray = gtk.StatusIcon()
         self._systray.set_from_file(self._app_icon)
+        self._systray.set_tooltip('%s\nLeft-click: toggle window hiding' % (APPNAME))
+        self._systray.connect('activate', self.systray_click)
         self._systray.set_visible(True)
+        
+    def systray_click(self, widget, user_param=None):
+        if self.window.get_property('visible'):
+            self.window.hide()
+        else:
+            self.window.deiconify()
+            self.window.present()
 
 def main(facebook):
     facebook.auth.createToken()
