@@ -7,6 +7,7 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 from facebook import Facebook
+from sys import exit
 
 VERSION = '0.1.0'
 APPNAME = 'minibook'
@@ -109,9 +110,12 @@ def main(facebook):
     return 0
 
 if __name__ == "__main__":
-    config_file = open("config", "r")
-    api_key = config_file.readline()[:-1]
-    secret_key = config_file.readline()[:-1]
+    try:
+        config_file = open("config", "r")
+        api_key = config_file.readline()[:-1]
+        secret_key = config_file.readline()[:-1]
+    except Exception, e:
+        exit('Error while loading config file: %s' % (str(e)))    
     facebook = Facebook(api_key,secret_key)
     MainWindow(facebook)
     main(facebook)
