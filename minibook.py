@@ -7,7 +7,6 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 from facebook import Facebook
-from sys import exit
 
 VERSION = '0.1.0'
 APPNAME = 'minibook'
