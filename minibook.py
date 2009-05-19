@@ -8,6 +8,9 @@ pygtk.require('2.0')
 import gtk
 from facebook import Facebook
 
+VERSION = '0.1.0'
+APPNAME = 'minibook'
+
 class MainWindow:
     def enter_callback(self, widget, entry):
         entry_text = entry.get_buffer().get_text()
