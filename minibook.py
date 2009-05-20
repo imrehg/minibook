@@ -90,8 +90,7 @@ class MainWindow:
 
         if spelling_support:
             try:
-                spelling = gtkspell.Spell(self.entry)
-                spelling.set_language('en')
+                spelling = gtkspell.Spell(self.entry, 'en')
             except:
                 spelling_support = False
 
