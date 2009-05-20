@@ -66,7 +66,7 @@ class MainWindow:
 
         # create a new window
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        self.window.set_size_request(400, 100)
+        self.window.set_size_request(400, 250)
         self.window.set_title("Minibook")
         self.window.connect("delete_event", lambda w, e: gtk.main_quit())
 
