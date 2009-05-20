@@ -1,0 +1,5 @@
+#!/bin/sh
+cd ..
+find . -name '*.py' -exec pyflakes {} \;
+python utils/pep8.py --filename=*.py --repeat .
+cd utils
