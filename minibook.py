@@ -11,6 +11,12 @@ from facebook import Facebook
 VERSION = '0.1.0'
 APPNAME = 'minibook'
 
+try:
+    import gtkspell
+    spelling_support = True
+except:
+    spelling_support = False
+    
 class MainWindow:
     def enter_callback(self, widget, entry):
         entry_text = entry.get_buffer().get_text()
@@ -35,6 +41,8 @@ class MainWindow:
         return True
 
     def __init__(self,facebook):
+        global spelling_support
+        
         # create a new window
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.set_size_request(400, 100)
@@ -79,7 +87,14 @@ class MainWindow:
         button.set_flags(gtk.CAN_DEFAULT)
         button.grab_default()
         button.show()
-        
+
+        if spelling_support:
+            try:
+                spelling = gtkspell.Spell(self.entry)
+                spelling.set_language('en')
+            except:
+                spelling_support = False
+
         self.window.show()
         self._facebook = facebook
         
