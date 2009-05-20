@@ -9,6 +9,7 @@ APPNAME = 'minibook'
 import pygtk
 pygtk.require('2.0')
 import gtk
+import gobject
 from facebook import Facebook
 
 try:
@@ -16,6 +17,10 @@ try:
     spelling_support = True
 except:
     spelling_support = False
+
+
+class Columns:
+    (ID, STATUS, DATETIME, REPLIES, LIKES) = range(5)
 
 
 class MainWindow:
@@ -36,6 +41,19 @@ class MainWindow:
 
             textfield.set_text("")
 
+    def getupdates(self):
+        list = self._facebook.status.get([self._facebook.uid], [10])
+        status_list = []
+        for status in list:
+            print status
+            status_list.append((status['status_id'],
+                status['message'],
+                status['time'],
+                '0',
+                '0'))
+        for data in status_list:
+            self.liststore.append(data)
+
     def count(self, text):
         start = text.get_start_iter()
         end = text.get_end_iter()
@@ -55,6 +73,14 @@ class MainWindow:
         vbox = gtk.VBox(False, 0)
         self.window.add(vbox)
         vbox.show()
+
+        self.create_grid()
+        self.statuslist_window = gtk.ScrolledWindow()
+        self.statuslist_window.set_policy(gtk.POLICY_NEVER, gtk.POLICY_ALWAYS)
+        self.statuslist_window.add(self.treeview)
+        self.treeview.show()
+        self.statuslist_window.show()
+        vbox.add(self.statuslist_window)
 
         hbox = gtk.HBox(False, 0)
 
@@ -108,6 +134,10 @@ class MainWindow:
         self._systray.connect('activate', self.systray_click)
         self._systray.set_visible(True)
 
+        self.userinfo = self._facebook.users.getInfo([self._facebook.uid], \
+            ['name'])[0]
+        self.getupdates()
+
     def systray_click(self, widget, user_param=None):
         if self.window.get_property('visible'):
             self.window.hide()
@@ -115,15 +145,38 @@ class MainWindow:
             self.window.deiconify()
             self.window.present()
 
+    def create_grid(self):
+        self.liststore = gtk.ListStore(gobject.TYPE_STRING,
+            gobject.TYPE_STRING,
+            gobject.TYPE_STRING,
+            gobject.TYPE_STRING,
+            gobject.TYPE_STRING)
+        self.treeview = gtk.TreeView(self.liststore)
+        self.treeview.set_property('headers-visible', False)
+        self.treeview.set_rules_hint(True)
+
+        self.status_renderer = gtk.CellRendererText()
+        #~ self.status_renderer.set_property('wrap-mode', gtk.WRAP_WORD)
+        self.status_renderer.set_property('wrap-width', 350)
+        self.status_renderer.set_property('width', 10)
+
+        self.status_column = gtk.TreeViewColumn('Message', \
+                self.status_renderer, text=1)
+        self.status_column.set_cell_data_func(self.status_renderer, \
+                self.status_format)
+        self.treeview.append_column(self.status_column)
+        self.treeview.set_resize_mode(gtk.RESIZE_IMMEDIATE)
+
+    def status_format(self, column, cell, store, position):
+        status = store.get_value(position, Columns.STATUS)
+        name = self.userinfo['name']
+        markup = '%s %s' % \
+                (name, status)
+        cell.set_property('markup', markup)
+        return
+
 
 def main(facebook):
-    facebook.auth.createToken()
-    facebook.login()
-
-    facebook.auth.getSession()
-    print 'Session Key:   ', facebook.session_key
-    print 'Your UID:      ', facebook.uid
-
     gtk.main()
     return 0
 
@@ -135,5 +188,11 @@ if __name__ == "__main__":
     except Exception, e:
         exit('Error while loading config file: %s' % (str(e)))
     facebook = Facebook(api_key, secret_key)
+    facebook.auth.createToken()
+    facebook.login()
+    facebook.auth.getSession()
+    print 'Session Key:   ', facebook.session_key
+    print 'Your UID:      ', facebook.uid
+
     MainWindow(facebook)
     main(facebook)
