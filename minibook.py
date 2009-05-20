@@ -3,13 +3,13 @@
 (C) 2009 Gergely Imreh <imrehg@gmail.com>
 """
 
+VERSION = '0.1.0'
+APPNAME = 'minibook'
+
 import pygtk
 pygtk.require('2.0')
 import gtk
 from facebook import Facebook
-
-VERSION = '0.1.0'
-APPNAME = 'minibook'
 
 try:
     import gtkspell
