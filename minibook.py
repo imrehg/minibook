@@ -16,20 +16,23 @@ try:
     spelling_support = True
 except:
     spelling_support = False
-    
+
+
 class MainWindow:
+    """The main application interface"""
+
     def enter_callback(self, widget, entry):
         entry_text = entry.get_buffer().get_text()
         print "Entry contents: %s\n" % entry_text
-        
+
     def sendupdate(self):
         textfield = self.entry.get_buffer()
         start = textfield.get_start_iter()
         end = textfield.get_end_iter()
         entry_text = textfield.get_text(start, end)
-        if entry_text != "" :
+        if entry_text != "":
             print "Sent entry contents: %s\n" % entry_text
-            self._facebook.status.set([entry_text],[self._facebook.uid])
+            self._facebook.status.set([entry_text], [self._facebook.uid])
 
             textfield.set_text("")
 
@@ -40,21 +43,21 @@ class MainWindow:
         self.count_label.set_text('(%d)' % (160 - len(thetext)))
         return True
 
-    def __init__(self,facebook):
+    def __init__(self, facebook):
         global spelling_support
-        
+
         # create a new window
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.set_size_request(400, 100)
         self.window.set_title("Minibook")
-        self.window.connect("delete_event", lambda w,e: gtk.main_quit())
+        self.window.connect("delete_event", lambda w, e: gtk.main_quit())
 
         vbox = gtk.VBox(False, 0)
         self.window.add(vbox)
         vbox.show()
 
         hbox = gtk.HBox(False, 0)
-        
+
         label = gtk.Label("What's on your mind?")
         hbox.pack_start(label, True, True, 0)
         label.show()
@@ -63,10 +66,10 @@ class MainWindow:
         self.count_label.show()
         vbox.add(hbox)
         hbox.show()
-        
+
         self.entry = gtk.TextView()
         text = self.entry.get_buffer()
-        text.connect('changed',self.count)
+        text.connect('changed', self.count)
         vbox.pack_start(self.entry, True, True, 0)
         self.entry.show()
 
@@ -96,20 +99,22 @@ class MainWindow:
 
         self.window.show()
         self._facebook = facebook
-        
+
         self._app_icon = 'minibook.png'
         self._systray = gtk.StatusIcon()
         self._systray.set_from_file(self._app_icon)
-        self._systray.set_tooltip('%s\nLeft-click: toggle window hiding' % (APPNAME))
+        self._systray.set_tooltip('%s\n' \
+            'Left-click: toggle window hiding' % (APPNAME))
         self._systray.connect('activate', self.systray_click)
         self._systray.set_visible(True)
-        
+
     def systray_click(self, widget, user_param=None):
         if self.window.get_property('visible'):
             self.window.hide()
         else:
             self.window.deiconify()
             self.window.present()
+
 
 def main(facebook):
     facebook.auth.createToken()
@@ -118,7 +123,7 @@ def main(facebook):
     facebook.auth.getSession()
     print 'Session Key:   ', facebook.session_key
     print 'Your UID:      ', facebook.uid
-    
+
     gtk.main()
     return 0
 
@@ -128,7 +133,7 @@ if __name__ == "__main__":
         api_key = config_file.readline()[:-1]
         secret_key = config_file.readline()[:-1]
     except Exception, e:
-        exit('Error while loading config file: %s' % (str(e)))    
-    facebook = Facebook(api_key,secret_key)
+        exit('Error while loading config file: %s' % (str(e)))
+    facebook = Facebook(api_key, secret_key)
     MainWindow(facebook)
     main(facebook)
