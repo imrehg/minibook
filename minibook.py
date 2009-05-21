@@ -10,6 +10,10 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 import gobject
+import threading
+
+gobject.threads_init()
+gtk.gdk.threads_init()
 from facebook import Facebook
 
 try:
@@ -21,6 +25,128 @@ except:
 
 class Columns:
     (ID, STATUS, DATETIME, REPLIES, LIKES) = range(5)
+
+
+#-------------------------------------------------
+# From http://edsiper.linuxchile.cl/blog/?p=152
+# to mitigate TreeView + threads problems
+#-------------------------------------------------
+
+class _IdleObject(gobject.GObject):
+    """
+    Override gobject.GObject to always emit signals in the main thread
+    by emmitting on an idle handler
+    """
+
+    def __init__(self):
+        gobject.GObject.__init__(self)
+
+    def emit(self, *args):
+        gobject.idle_add(gobject.GObject.emit, self, *args)
+
+
+#-------------------------------------------------
+# Thread support
+#-------------------------------------------------
+
+class _WorkerThread(threading.Thread, _IdleObject):
+    """A single working thread."""
+
+    __gsignals__ = {
+            "completed": (
+                gobject.SIGNAL_RUN_LAST,
+                gobject.TYPE_NONE,
+                (gobject.TYPE_PYOBJECT, )),
+            "exception": (
+                gobject.SIGNAL_RUN_LAST,
+                gobject.TYPE_NONE,
+                (gobject.TYPE_PYOBJECT, ))}
+
+    def __init__(self, function, *args, **kwargs):
+        threading.Thread.__init__(self)
+        _IdleObject.__init__(self)
+        self._function = function
+        self._args = args
+        self._kwargs = kwargs
+
+    def run(self):
+        # call the function
+        print('Thread %s calling %s', self.name, str(self._function))
+
+        args = self._args
+        kwargs = self._kwargs
+
+        try:
+            result = self._function(*args, **kwargs)
+        except Exception, exc:  # Catch ALL exceptions
+            # TODO: Check if this catch all warnins too!
+            print('Exception %s' % str(exc))
+            self.emit("exception", exc)
+            return
+
+        print('Thread %s completed', self.name)
+
+        self.emit("completed", result)
+        return
+
+
+class _ThreadManager(object):
+    """Manages the threads."""
+
+    def __init__(self, max_threads=2):
+        """Start the thread pool. The number of threads in the pool is defined
+        by `pool_size`, defaults to 2."""
+        self._max_threads = max_threads
+        self._thread_pool = []
+        self._running = []
+        self._thread_id = 0
+
+        return
+
+    def _remove_thread(self, widget, arg=None):
+        """Called when the thread completes. We remove it from the thread list
+        (dictionary, actually) and start the next thread (if there is one)."""
+
+        # not actually a widget. It's the object that emitted the signal, in
+        # this case, the _WorkerThread object.
+        thread_id = widget.name
+
+        print('Thread %s completed, %d threads in the queue' % (thread_id,
+                len(self._thread_pool)))
+
+        self._running.remove(thread_id)
+
+        if self._thread_pool:
+            if len(self._running) < self._max_threads:
+                next = self._thread_pool.pop()
+                print('Dequeuing thread %s', next.name)
+                self._running.append(next.name)
+                next.start()
+
+        return
+
+    def add_work(self, complete_cb, exception_cb, func, *args, **kwargs):
+        """Add a work to the thread list."""
+
+        thread = _WorkerThread(func, *args, **kwargs)
+        thread_id = '%s' % (self._thread_id)
+
+        thread.connect('completed', complete_cb)
+        thread.connect('completed', self._remove_thread)
+        thread.connect('exception', exception_cb)
+        thread.setName(thread_id)
+
+        if len(self._running) < self._max_threads:
+            self._running.append(thread_id)
+            thread.start()
+        else:
+            running_names = ', '.join(self._running)
+            print('Threads %s running, adding %s to the queue',
+                    running_names, thread_id)
+            self._thread_pool.append(thread)
+
+        self._thread_id += 1
+        return
 
 
 class MainWindow:
@@ -53,6 +179,13 @@ class MainWindow:
                 '0'))
         for data in status_list:
             self.liststore.append(data)
+
+    def post_updates(self, widget, results):
+        print("Update result: %s" % (str(results)))
+        return
+
+    def except_updates(self, widget, exception):
+        print("Update exception: %s" % (str(exception)))
 
     def count(self, text):
         start = text.get_start_iter()
@@ -134,9 +267,13 @@ class MainWindow:
         self._systray.connect('activate', self.systray_click)
         self._systray.set_visible(True)
 
+        self._threads = _ThreadManager()
+
         self.userinfo = self._facebook.users.getInfo([self._facebook.uid], \
             ['name'])[0]
-        self.getupdates()
+        self._threads.add_work(self.post_updates,
+                self.except_updates,
+                self.getupdates)
 
     def systray_click(self, widget, user_param=None):
         if self.window.get_property('visible'):
