@@ -20,6 +20,7 @@ import threading
 
 gobject.threads_init()
 gtk.gdk.threads_init()
+gtk.gdk.threads_enter()
 
 try:
     import gtkspell
@@ -320,6 +321,7 @@ class MainWindow:
 
 def main(facebook):
     gtk.main()
+    gtk.gdk.threads_leave()
     return 0
 
 if __name__ == "__main__":
