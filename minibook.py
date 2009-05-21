@@ -10,11 +10,16 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 import gobject
+try:
+    from facebook import Facebook
+except:
+    print "Pyfacebook is not available, cannot run."
+    exit(1)
+
 import threading
 
 gobject.threads_init()
 gtk.gdk.threads_init()
-from facebook import Facebook
 
 try:
     import gtkspell
