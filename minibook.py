@@ -336,7 +336,9 @@ if __name__ == "__main__":
     # Delay dialog to allow for login in browser
     dia = gtk.Dialog('minibook: login',
         None,
-        gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT | gtk.DIALOG_NO_SEPARATOR,  
+        gtk.DIALOG_MODAL | \
+        gtk.DIALOG_DESTROY_WITH_PARENT | \
+        gtk.DIALOG_NO_SEPARATOR,
         ("Logged In", gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CLOSE))
     label = gtk.Label("Click after logging in to Facebook in your browser:")
     dia.vbox.pack_start(label, True, True, 10)
