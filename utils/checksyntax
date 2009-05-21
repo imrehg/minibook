@@ -1,5 +1,9 @@
 #!/bin/sh
+
 cd ..
+echo "=== Pyflakes"
 find . -name '*.py' -exec pyflakes {} \;
+echo "=== PEP8 Style"
 python utils/pep8.py --filename=*.py --repeat .
 cd utils
+echo "=== Done"
