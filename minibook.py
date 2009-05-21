@@ -190,6 +190,22 @@ if __name__ == "__main__":
     facebook = Facebook(api_key, secret_key)
     facebook.auth.createToken()
     facebook.login()
+
+    # Delay dialog to allow for login in browser
+    dia = gtk.Dialog('minibook: login',
+        None,
+        gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT | gtk.DIALOG_NO_SEPARATOR,  
+        ("Logged In", gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CLOSE))
+    label = gtk.Label("Click after logging in to Facebook in your browser:")
+    dia.vbox.pack_start(label, True, True, 10)
+    label.show()
+    dia.show()
+    result = dia.run()
+    if result == gtk.RESPONSE_CLOSE:
+        print "Bye"
+        exit(0)
+    dia.destroy()
+
     facebook.auth.getSession()
     print 'Session Key:   ', facebook.session_key
     print 'Your UID:      ', facebook.uid
