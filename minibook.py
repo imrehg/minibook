@@ -178,8 +178,22 @@ class MainWindow:
         status_list = []
         for status in list:
             print status
+            status_id = ("%s_%s" % (self._facebook.uid,status['status_id']))
+            print status_id
+            query = ("select message, comments, likes FROM stream WHERE post_id = '%s'" % (status_id))
+            print query
+            comment_count = 0
+            likes_count = 0
+            try:
+                stat = self._facebook.fql.query([query])
+                comment_count = stat[0]['comments']['count']
+                likes_count = stat[0]['likes']['count']
+            except Exception, e:
+                print(str(e))
+                
+            message = ('%s [%d comments, %d likes]' % (status['message'], comment_count, likes_count))
             status_list.append((status['status_id'],
-                status['message'],
+                message,
                 status['time'],
                 '0',
                 '0'))
