@@ -16,6 +16,8 @@ except:
     print "Pyfacebook is not available, cannot run."
     exit(1)
 
+import time
+import re
 import threading
 
 gobject.threads_init()
@@ -30,7 +32,7 @@ except:
 
 
 class Columns:
-    (ID, STATUS, DATETIME, REPLIES, LIKES) = range(5)
+    (STATUSID, UID, STATUS, DATETIME, REPLIES, LIKES) = range(6)
 
 
 #-------------------------------------------------
@@ -77,7 +79,7 @@ class _WorkerThread(threading.Thread, _IdleObject):
 
     def run(self):
         # call the function
-        print('Thread %s calling %s', self.name, str(self._function))
+        print('Thread %s calling %s' % (self.name, str(self._function)))
 
         args = self._args
         kwargs = self._kwargs
@@ -90,7 +92,7 @@ class _WorkerThread(threading.Thread, _IdleObject):
             self.emit("exception", exc)
             return
 
-        print('Thread %s completed', self.name)
+        print('Thread %s completed' % (self.name))
 
         self.emit("completed", result)
         return
@@ -158,10 +160,10 @@ class _ThreadManager(object):
 class MainWindow:
     """The main application interface"""
 
-    def enter_callback(self, widget, entry):
-        entry_text = entry.get_buffer().get_text()
-        print "Entry contents: %s\n" % entry_text
 
+    #------------------------------
+    # Information sending functions
+    #------------------------------
     def sendupdate(self):
         textfield = self.entry.get_buffer()
         start = textfield.get_start_iter()
@@ -172,41 +174,65 @@ class MainWindow:
             self._facebook.status.set([entry_text], [self._facebook.uid])
 
             textfield.set_text("")
+            self.refresh()
 
-    def getupdates(self):
-        list = self._facebook.status.get([self._facebook.uid], [10])
-        status_list = []
-        for status in list:
-            print status
-            status_id = ("%s_%s" % (self._facebook.uid,status['status_id']))
-            print status_id
-            query = ("select message, comments, likes FROM stream WHERE post_id = '%s'" % (status_id))
-            print query
-            comment_count = 0
-            likes_count = 0
-            try:
-                stat = self._facebook.fql.query([query])
-                comment_count = stat[0]['comments']['count']
-                likes_count = stat[0]['likes']['count']
-            except Exception, e:
-                print(str(e))
-                
-            message = ('%s [%d comments, %d likes]' % (status['message'], comment_count, likes_count))
-            status_list.append((status['status_id'],
-                message,
-                status['time'],
-                '0',
-                '0'))
-        for data in status_list:
-            self.liststore.append(data)
+    #------------------------------
+    # Information pulling functions
+    #------------------------------
+    def get_friends_list(self):
+        query = ("SELECT uid, name FROM user \
+            WHERE (uid IN (SELECT uid2 FROM friend WHERE uid1 = %d) \
+            OR uid = %d)" % (self._facebook.uid, self._facebook.uid))
+        friends = self._facebook.fql.query([query])
+        self.friendsname = {}
+        for friend in friends:
+            self.friendsname[str(friend['uid'])] = friend['name']
 
-    def post_updates(self, widget, results):
-        print("Update result: %s" % (str(results)))
+    def post_get_friends_list(self, widget, results):
+        print("%s has altogether %d friends in the database." \
+            % (self.friendsname[str(self._facebook.uid)],
+            len(self.friendsname.keys())))
+        self.refresh()
         return
 
-    def except_updates(self, widget, exception):
-        print("Update exception: %s" % (str(exception)))
+    def except_get_friends_list(self, widget, exception):
+        print("Get friends exception: %s" % (str(exception)))
 
+    def get_status_list(self):
+        if self._last_update > 0:
+            since = self._last_update
+        else:
+            now = int(time.time())
+            since = now - 5*24*60*60
+
+        print("---> Statuses since: %s" \
+            % (time.strftime("%c", time.localtime(since))))
+        query = ('SELECT uid, time, status_id, message FROM status \
+            WHERE (uid IN (SELECT uid2 FROM friend WHERE uid1 = %d) \
+            OR uid = %d) \
+            AND time  > %d \
+            ORDER BY time DESC\
+            LIMIT 60' \
+            % (self._facebook.uid, self._facebook.uid, since))
+        status = self._facebook.fql.query([query])
+        for up in status:
+            self.liststore.append((up['status_id'],
+                up['uid'],
+                up['message'],
+                up['time'],
+                '0',
+                '0'))
+
+    def post_get_status_list(self, widget, results):
+        print("Status updates successfully pulled.")
+        return
+
+    def except_get_status_list(self, widget, exception):
+        print("Get status list exception: %s" % (str(exception)))
+
+    #-----------------
+    # Helper functions
+    #-----------------
     def count(self, text):
         start = text.get_start_iter()
         end = text.get_end_iter()
@@ -214,6 +240,85 @@ class MainWindow:
         self.count_label.set_text('(%d)' % (160 - len(thetext)))
         return True
 
+    def set_auto_refresh(self):
+        if self._refresh_id:
+            gobject.source_remove(self._refresh_id)
+
+        self._refresh_id = gobject.timeout_add(
+                self._prefs['auto_refresh_interval']*60*1000,
+                self.refresh)
+        print("Auto-refresh enabled: %d minutes" \
+            % (self._prefs['auto_refresh_interval']))
+
+    def refresh(self):
+        self._threads.add_work(self.post_get_status_list,
+            self.except_get_status_list,
+            self.get_status_list)
+
+    def status_format(self, column, cell, store, position):
+        uid = store.get_value(position, Columns.UID)
+        try:
+            name = self.friendsname[str(uid)]
+        except:
+            print store.get_value(position, Columns.STATUS)
+            print store.get_value(position, Columns.UID)
+            print store.get_value(position, Columns.DATETIME)
+
+        status = store.get_value(position, Columns.STATUS)
+        datetime = time.localtime(float(store.get_value(position, \
+            Columns.DATETIME)))
+        displaytime = time.strftime('%c', datetime)
+
+        #replace characters that would choke the markup
+        status = re.sub(r'<', r'&lt;', status)
+        status = re.sub(r'>', r'&gt;', status)
+        markup = '<b>%s</b> %s\non %s' % \
+                (name, status, displaytime)
+        cell.set_property('markup', markup)
+        return
+
+    #--------------------
+    # Interface functions
+    #--------------------
+    def systray_click(self, widget, user_param=None):
+        if self.window.get_property('visible'):
+            x, y = self.window.get_position()
+            self._prefs['window_pos_x'] = x
+            self._prefs['window_pos_y'] = y
+            self.window.hide()
+        else:
+            x = self._prefs['window_pos_x']
+            y = self._prefs['window_pos_y']
+            self.window.move(x, y)
+            self.window.deiconify()
+            self.window.present()
+
+    def create_grid(self):
+        self.liststore = gtk.ListStore(gobject.TYPE_STRING,
+            gobject.TYPE_INT,
+            gobject.TYPE_STRING,
+            gobject.TYPE_STRING,
+            gobject.TYPE_STRING,
+            gobject.TYPE_STRING)
+        self.treeview = gtk.TreeView(self.liststore)
+        self.treeview.set_property('headers-visible', False)
+        self.treeview.set_rules_hint(True)
+
+        self.status_renderer = gtk.CellRendererText()
+        #~ self.status_renderer.set_property('wrap-mode', gtk.WRAP_WORD)
+        self.status_renderer.set_property('wrap-width', 350)
+        self.status_renderer.set_property('width', 10)
+
+        self.status_column = gtk.TreeViewColumn('Message', \
+                self.status_renderer, text=1)
+        self.status_column.set_cell_data_func(self.status_renderer, \
+                self.status_format)
+        self.treeview.append_column(self.status_column)
+        self.treeview.set_resize_mode(gtk.RESIZE_IMMEDIATE)
+
+    #------------------
+    # Main Window start
+    #------------------
     def __init__(self, facebook):
         global spelling_support
 
@@ -291,46 +396,22 @@ class MainWindow:
 
         self.userinfo = self._facebook.users.getInfo([self._facebook.uid], \
             ['name'])[0]
-        self._threads.add_work(self.post_updates,
-                self.except_updates,
-                self.getupdates)
+        #~ self._threads.add_work(self.post_updates,
+                #~ self.except_updates,
+                #~ self.getupdates)
+        self._last_update = 0
+        self._threads.add_work(self.post_get_friends_list,
+                self.except_get_friends_list,
+                self.get_friends_list)
 
-    def systray_click(self, widget, user_param=None):
-        if self.window.get_property('visible'):
-            self.window.hide()
-        else:
-            self.window.deiconify()
-            self.window.present()
+        self._prefs = {}
+        x, y = self.window.get_position()
+        self._prefs['window_pos_x'] = x
+        self._prefs['window_pos_y'] = y
+        self._prefs['auto_refresh_interval'] = 5
 
-    def create_grid(self):
-        self.liststore = gtk.ListStore(gobject.TYPE_STRING,
-            gobject.TYPE_STRING,
-            gobject.TYPE_STRING,
-            gobject.TYPE_STRING,
-            gobject.TYPE_STRING)
-        self.treeview = gtk.TreeView(self.liststore)
-        self.treeview.set_property('headers-visible', False)
-        self.treeview.set_rules_hint(True)
-
-        self.status_renderer = gtk.CellRendererText()
-        #~ self.status_renderer.set_property('wrap-mode', gtk.WRAP_WORD)
-        self.status_renderer.set_property('wrap-width', 350)
-        self.status_renderer.set_property('width', 10)
-
-        self.status_column = gtk.TreeViewColumn('Message', \
-                self.status_renderer, text=1)
-        self.status_column.set_cell_data_func(self.status_renderer, \
-                self.status_format)
-        self.treeview.append_column(self.status_column)
-        self.treeview.set_resize_mode(gtk.RESIZE_IMMEDIATE)
-
-    def status_format(self, column, cell, store, position):
-        status = store.get_value(position, Columns.STATUS)
-        name = self.userinfo['name']
-        markup = '%s %s' % \
-                (name, status)
-        cell.set_property('markup', markup)
-        return
+        self._refresh_id = None
+        self.set_auto_refresh()
 
 
 def main(facebook):
