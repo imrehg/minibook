@@ -244,6 +244,7 @@ class MainWindow:
 
     def post_get_status_list(self, widget, results):
         _log.debug("Status updates successfully pulled.")
+        self._last_update = int(time.time())
         return
 
     def except_get_status_list(self, widget, exception):
