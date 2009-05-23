@@ -236,8 +236,9 @@ class MainWindow:
 
         _log.info('Received %d new status' % (len(status)))
 
+        status.reverse()
         for up in status:
-            self.liststore.append((up['status_id'],
+            self.liststore.prepend((up['status_id'],
                 up['uid'],
                 up['message'],
                 up['time'],
