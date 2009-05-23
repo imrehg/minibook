@@ -418,9 +418,6 @@ class MainWindow:
 
         self.userinfo = self._facebook.users.getInfo([self._facebook.uid], \
             ['name'])[0]
-        #~ self._threads.add_work(self.post_updates,
-                #~ self.except_updates,
-                #~ self.getupdates)
         self._last_update = 0
         self._threads.add_work(self.post_get_friends_list,
                 self.except_get_friends_list,
