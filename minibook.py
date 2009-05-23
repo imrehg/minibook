@@ -393,6 +393,8 @@ class MainWindow:
         self._systray.connect('activate', self.systray_click)
         self._systray.set_visible(True)
 
+        self.window.set_icon_from_file(self._app_icon)
+ 
         self._threads = _ThreadManager()
 
         self.userinfo = self._facebook.users.getInfo([self._facebook.uid], \
