@@ -286,6 +286,7 @@ class MainWindow:
         displaytime = time.strftime('%c', datetime)
 
         #replace characters that would choke the markup
+        status = re.sub(r'&', r'&amp;', status)
         status = re.sub(r'<', r'&lt;', status)
         status = re.sub(r'>', r'&gt;', status)
         markup = ('<b>%s</b> %s\non %s' % \
