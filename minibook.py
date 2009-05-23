@@ -44,6 +44,8 @@ if len(sys.argv) > 1:
     level = LEVELS.get(level_name, logging.NOTSET)
     logging.basicConfig(level=level)
 
+_log = logging.getLogger('minibook')
+
 
 class Columns:
     (STATUSID, UID, STATUS, DATETIME, REPLIES, LIKES) = range(6)
@@ -93,20 +95,19 @@ class _WorkerThread(threading.Thread, _IdleObject):
 
     def run(self):
         # call the function
-        print('Thread %s calling %s' % (self.name, str(self._function)))
+        _log.debug('Thread %s calling %s' % (self.name, str(self._function)))
 
         args = self._args
         kwargs = self._kwargs
 
         try:
             result = self._function(*args, **kwargs)
-        except Exception, exc:  # Catch ALL exceptions
-            # TODO: Check if this catch all warnins too!
-            print('Exception %s' % str(exc))
+        except Exception, exc:
+            _log.error('Exception %s' % str(exc))
             self.emit("exception", exc)
             return
 
-        print('Thread %s completed' % (self.name))
+        _log.debug('Thread %s completed' % (self.name))
 
         self.emit("completed", result)
         return
@@ -133,7 +134,7 @@ class _ThreadManager(object):
         # this case, the _WorkerThread object.
         thread_id = widget.name
 
-        print('Thread %s completed, %d threads in the queue' % (thread_id,
+        _log.debug('Thread %s completed, %d threads in the queue' % (thread_id,
                 len(self._thread_pool)))
 
         self._running.remove(thread_id)
@@ -141,7 +142,7 @@ class _ThreadManager(object):
         if self._thread_pool:
             if len(self._running) < self._max_threads:
                 next = self._thread_pool.pop()
-                print('Dequeuing thread %s', next.name)
+                _log.debug('Dequeuing thread %s', next.name)
                 self._running.append(next.name)
                 next.start()
 
@@ -163,7 +164,7 @@ class _ThreadManager(object):
             thread.start()
         else:
             running_names = ', '.join(self._running)
-            print('Threads %s running, adding %s to the queue',
+            _log.debug('Threads %s running, adding %s to the queue',
                     running_names, thread_id)
             self._thread_pool.append(thread)
 
@@ -184,7 +185,7 @@ class MainWindow:
         end = textfield.get_end_iter()
         entry_text = textfield.get_text(start, end)
         if entry_text != "":
-            print "Sent entry contents: %s\n" % entry_text
+            _log.info('Sent status update: %s\n' % entry_text)
             self._facebook.status.set([entry_text], [self._facebook.uid])
 
             textfield.set_text("")
@@ -203,14 +204,14 @@ class MainWindow:
             self.friendsname[str(friend['uid'])] = friend['name']
 
     def post_get_friends_list(self, widget, results):
-        print("%s has altogether %d friends in the database." \
+        _log.info('%s has altogether %d friends in the database.' \
             % (self.friendsname[str(self._facebook.uid)],
             len(self.friendsname.keys())))
         self.refresh()
         return
 
     def except_get_friends_list(self, widget, exception):
-        print("Get friends exception: %s" % (str(exception)))
+        _log.error("Get friends exception: %s" % (str(exception)))
 
     def get_status_list(self):
         if self._last_update > 0:
@@ -219,8 +220,9 @@ class MainWindow:
             now = int(time.time())
             since = now - 5*24*60*60
 
-        print("---> Statuses since: %s" \
+        _log.info("Fetch all status published since %s" \
             % (time.strftime("%c", time.localtime(since))))
+            
         query = ('SELECT uid, time, status_id, message FROM status \
             WHERE (uid IN (SELECT uid2 FROM friend WHERE uid1 = %d) \
             OR uid = %d) \
@@ -228,7 +230,10 @@ class MainWindow:
             ORDER BY time DESC\
             LIMIT 60' \
             % (self._facebook.uid, self._facebook.uid, since))
+        _log.debug('Status list query: %s' % (query))
+        
         status = self._facebook.fql.query([query])
+        
         for up in status:
             self.liststore.append((up['status_id'],
                 up['uid'],
@@ -238,11 +243,11 @@ class MainWindow:
                 '0'))
 
     def post_get_status_list(self, widget, results):
-        print("Status updates successfully pulled.")
+        _log.debug("Status updates successfully pulled.")
         return
 
     def except_get_status_list(self, widget, exception):
-        print("Get status list exception: %s" % (str(exception)))
+        _log.error("Get status list exception: %s" % (str(exception)))
 
     #-----------------
     # Helper functions
@@ -261,7 +266,7 @@ class MainWindow:
         self._refresh_id = gobject.timeout_add(
                 self._prefs['auto_refresh_interval']*60*1000,
                 self.refresh)
-        print("Auto-refresh enabled: %d minutes" \
+        _log.info("Auto-refresh enabled: %d minutes" \
             % (self._prefs['auto_refresh_interval']))
 
     def refresh(self):
@@ -272,13 +277,7 @@ class MainWindow:
 
     def status_format(self, column, cell, store, position):
         uid = store.get_value(position, Columns.UID)
-        try:
-            name = self.friendsname[str(uid)]
-        except:
-            print store.get_value(position, Columns.STATUS)
-            print store.get_value(position, Columns.UID)
-            print store.get_value(position, Columns.DATETIME)
-
+        name = self.friendsname[str(uid)]
         status = store.get_value(position, Columns.STATUS)
         datetime = time.localtime(float(store.get_value(position, \
             Columns.DATETIME)))
@@ -287,8 +286,9 @@ class MainWindow:
         #replace characters that would choke the markup
         status = re.sub(r'<', r'&lt;', status)
         status = re.sub(r'>', r'&gt;', status)
-        markup = '<b>%s</b> %s\non %s' % \
-                (name, status, displaytime)
+        markup = ('<b>%s</b> %s\non %s' % \
+                (name, status, displaytime))
+        _log.debug('Marked up text: %s' % (markup))
         cell.set_property('markup', markup)
         return
 
@@ -297,6 +297,7 @@ class MainWindow:
     #--------------------
     def systray_click(self, widget, user_param=None):
         if self.window.get_property('visible'):
+            _log.debug('Hiding window')
             x, y = self.window.get_position()
             self._prefs['window_pos_x'] = x
             self._prefs['window_pos_y'] = y
@@ -304,6 +305,7 @@ class MainWindow:
         else:
             x = self._prefs['window_pos_x']
             y = self._prefs['window_pos_y']
+            _log.debug('Restoring window at (%d, %d)' % (x,y))
             self.window.move(x, y)
             self.window.deiconify()
             self.window.present()
@@ -434,6 +436,7 @@ class MainWindow:
 def main(facebook):
     gtk.main()
     gtk.gdk.threads_leave()
+    _log.debug('Exiting')
     return 0
 
 if __name__ == "__main__":
@@ -441,11 +444,15 @@ if __name__ == "__main__":
         config_file = open("config", "r")
         api_key = config_file.readline()[:-1]
         secret_key = config_file.readline()[:-1]
+        _log.debug('Config file loaded successfully')
     except Exception, e:
-        exit('Error while loading config file: %s' % (str(e)))
+        _log.error('Error while loading config file: %s' % (str(e)))
+        exit(1)
+        
     facebook = Facebook(api_key, secret_key)
     facebook.auth.createToken()
     facebook.login()
+    _log.debug('Showing Facebook login page in default browser.')
 
     # Delay dialog to allow for login in browser
     dia = gtk.Dialog('minibook: login',
@@ -460,13 +467,13 @@ if __name__ == "__main__":
     dia.show()
     result = dia.run()
     if result == gtk.RESPONSE_CLOSE:
-        print "Bye"
+        _log.debug('Exiting before Facebook login.')
         exit(0)
     dia.destroy()
 
     facebook.auth.getSession()
-    print 'Session Key:   ', facebook.session_key
-    print 'Your UID:      ', facebook.uid
+    _log.info('Session Key: %s' % (facebook.session_key))
+    _log.info('User\'s UID: %d' % (facebook.uid))
 
     MainWindow(facebook)
     main(facebook)
