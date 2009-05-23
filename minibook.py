@@ -220,7 +220,7 @@ class MainWindow:
             now = int(time.time())
             since = now - 5*24*60*60
 
-        _log.info("Fetch all status published since %s" \
+        _log.info("Fetch every status published since %s" \
             % (time.strftime("%c", time.localtime(since))))
 
         query = ('SELECT uid, time, status_id, message FROM status \
