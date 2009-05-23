@@ -235,19 +235,18 @@ class MainWindow:
         status = self._facebook.fql.query([query])
 
         _log.info('Received %d new status' % (len(status)))
+        return status
 
-        status.reverse()
-        for up in status:
+    def post_get_status_list(self, widget, results):
+        _log.debug("Status updates successfully pulled.")
+        self._last_update = int(time.time())
+        for up in results:
             self.liststore.prepend((up['status_id'],
                 up['uid'],
                 up['message'],
                 up['time'],
                 '0',
                 '0'))
-
-    def post_get_status_list(self, widget, results):
-        _log.debug("Status updates successfully pulled.")
-        self._last_update = int(time.time())
         return
 
     def except_get_status_list(self, widget, exception):
@@ -323,6 +322,11 @@ class MainWindow:
             gobject.TYPE_STRING,
             gobject.TYPE_STRING,
             gobject.TYPE_STRING)
+        self.liststore.set_sort_column_id(Columns.DATETIME, \
+            gtk.SORT_DESCENDING)
+        self.liststore.set_sort_func(Columns.DATETIME, \
+            self._order_datetime)
+
         self.treeview = gtk.TreeView(self.liststore)
         self.treeview.set_property('headers-visible', False)
         self.treeview.set_rules_hint(True)
@@ -338,6 +342,22 @@ class MainWindow:
                 self.status_format)
         self.treeview.append_column(self.status_column)
         self.treeview.set_resize_mode(gtk.RESIZE_IMMEDIATE)
+
+    def _order_datetime(self, model, iter1, iter2, user_data=None):
+        """Used by the ListStore to sort the columns (in our case, "column")
+        by date."""
+        time1 = model.get_value(iter1, Columns.DATETIME)
+        time2 = model.get_value(iter2, Columns.DATETIME)
+
+        if (not time1) or \
+                 (time1 < time2):
+            return -1
+
+        if (not time2) or \
+                (time1 > time2):
+            return 1
+        return 0
+
 
     #------------------
     # Main Window start
