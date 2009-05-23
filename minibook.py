@@ -429,7 +429,7 @@ class MainWindow:
         x, y = self.window.get_position()
         self._prefs['window_pos_x'] = x
         self._prefs['window_pos_y'] = y
-        self._prefs['auto_refresh_interval'] = 1
+        self._prefs['auto_refresh_interval'] = 5
 
         self._refresh_id = None
         self.set_auto_refresh()
