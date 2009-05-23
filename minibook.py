@@ -32,6 +32,7 @@ except:
 
 import logging
 import sys
+import timesince
 
 LEVELS = {'debug': logging.DEBUG,
           'info': logging.INFO,
@@ -283,16 +284,14 @@ class MainWindow:
         uid = store.get_value(position, Columns.UID)
         name = self.friendsname[str(uid)]
         status = store.get_value(position, Columns.STATUS)
-        datetime = time.localtime(float(store.get_value(position, \
-            Columns.DATETIME)))
-        displaytime = time.strftime('%c', datetime)
+        posttime = store.get_value(position, Columns.DATETIME)
 
         #replace characters that would choke the markup
         status = re.sub(r'&', r'&amp;', status)
         status = re.sub(r'<', r'&lt;', status)
         status = re.sub(r'>', r'&gt;', status)
-        markup = ('<b>%s</b> %s\non %s' % \
-                (name, status, displaytime))
+        markup = ('<b>%s</b> %s\n(%s ago)' % \
+                (name, status, timesince.timesince(posttime)))
         _log.debug('Marked up text: %s' % (markup))
         cell.set_property('markup', markup)
         return
