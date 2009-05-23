@@ -222,7 +222,7 @@ class MainWindow:
 
         _log.info("Fetch all status published since %s" \
             % (time.strftime("%c", time.localtime(since))))
-            
+
         query = ('SELECT uid, time, status_id, message FROM status \
             WHERE (uid IN (SELECT uid2 FROM friend WHERE uid1 = %d) \
             OR uid = %d) \
@@ -231,9 +231,9 @@ class MainWindow:
             LIMIT 60' \
             % (self._facebook.uid, self._facebook.uid, since))
         _log.debug('Status list query: %s' % (query))
-        
+
         status = self._facebook.fql.query([query])
-        
+
         for up in status:
             self.liststore.append((up['status_id'],
                 up['uid'],
@@ -305,7 +305,7 @@ class MainWindow:
         else:
             x = self._prefs['window_pos_x']
             y = self._prefs['window_pos_y']
-            _log.debug('Restoring window at (%d, %d)' % (x,y))
+            _log.debug('Restoring window at (%d, %d)' % (x, y))
             self.window.move(x, y)
             self.window.deiconify()
             self.window.present()
@@ -410,7 +410,7 @@ class MainWindow:
         self._systray.set_visible(True)
 
         self.window.set_icon_from_file(self._app_icon)
- 
+
         self._threads = _ThreadManager()
 
         self.userinfo = self._facebook.users.getInfo([self._facebook.uid], \
@@ -427,7 +427,7 @@ class MainWindow:
         x, y = self.window.get_position()
         self._prefs['window_pos_x'] = x
         self._prefs['window_pos_y'] = y
-        self._prefs['auto_refresh_interval'] = 5
+        self._prefs['auto_refresh_interval'] = 1
 
         self._refresh_id = None
         self.set_auto_refresh()
@@ -448,7 +448,7 @@ if __name__ == "__main__":
     except Exception, e:
         _log.error('Error while loading config file: %s' % (str(e)))
         exit(1)
-        
+
     facebook = Facebook(api_key, secret_key)
     facebook.auth.createToken()
     facebook.login()
