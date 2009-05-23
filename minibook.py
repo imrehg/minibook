@@ -254,6 +254,7 @@ class MainWindow:
         self._threads.add_work(self.post_get_status_list,
             self.except_get_status_list,
             self.get_status_list)
+        return
 
     def status_format(self, column, cell, store, position):
         uid = store.get_value(position, Columns.UID)
