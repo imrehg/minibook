@@ -234,6 +234,8 @@ class MainWindow:
 
         status = self._facebook.fql.query([query])
 
+        _log.info('Received %d new status' % (len(status)))
+
         for up in status:
             self.liststore.append((up['status_id'],
                 up['uid'],
