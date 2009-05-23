@@ -30,6 +30,20 @@ try:
 except:
     spelling_support = False
 
+import logging
+import sys
+
+LEVELS = {'debug': logging.DEBUG,
+          'info': logging.INFO,
+          'warning': logging.WARNING,
+          'error': logging.ERROR,
+          'critical': logging.CRITICAL}
+
+if len(sys.argv) > 1:
+    level_name = sys.argv[1]
+    level = LEVELS.get(level_name, logging.NOTSET)
+    logging.basicConfig(level=level)
+
 
 class Columns:
     (STATUSID, UID, STATUS, DATETIME, REPLIES, LIKES) = range(6)
