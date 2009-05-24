@@ -219,35 +219,38 @@ class MainWindow:
             since = self._last_update
         else:
             now = int(time.time())
-            since = now - 5*24*60*60
+            since = now - 5*24*60*60           
+        till = int(time.time())
 
-        _log.info("Fetch every status published since %s" \
-            % (time.strftime("%c", time.localtime(since))))
+        _log.info("Fetching status updates published between %s and %s" \
+            % (time.strftime("%c", time.localtime(since)),
+            time.strftime("%c", time.localtime(since))))
 
         query = ('SELECT uid, time, status_id, message FROM status \
             WHERE (uid IN (SELECT uid2 FROM friend WHERE uid1 = %d) \
             OR uid = %d) \
-            AND time  > %d \
+            AND time  > %d AND time < %d\
             ORDER BY time DESC\
             LIMIT 60' \
-            % (self._facebook.uid, self._facebook.uid, since))
+            % (self._facebook.uid, self._facebook.uid, since, till))
         _log.debug('Status list query: %s' % (query))
 
         status = self._facebook.fql.query([query])
 
         _log.info('Received %d new status' % (len(status)))
-        return status
+        return [status, till]
 
     def post_get_status_list(self, widget, results):
-        _log.debug("Status updates successfully pulled.")
-        self._last_update = int(time.time())
-        for up in results:
+        _log.debug('Status updates successfully pulled.')
+        updates = results[0]
+        for up in updates:
             self.liststore.prepend((up['status_id'],
                 up['uid'],
                 up['message'],
                 up['time'],
                 '0',
                 '0'))
+        self._last_update = results[1]
         return
 
     def except_get_status_list(self, widget, exception):
