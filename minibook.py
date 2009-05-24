@@ -33,6 +33,7 @@ except:
 import logging
 import sys
 import timesince
+import urllib2
 
 LEVELS = {'debug': logging.DEBUG,
           'info': logging.INFO,
@@ -199,15 +200,19 @@ class MainWindow:
     # Information pulling functions
     #------------------------------
     def get_friends_list(self):
-        query = ("SELECT uid, name FROM user \
+        query = ("SELECT uid, name, pic_square FROM user \
             WHERE (uid IN (SELECT uid2 FROM friend WHERE uid1 = %d) \
             OR uid = %d)" % (self._facebook.uid, self._facebook.uid))
         friends = self._facebook.fql.query([query])
-        self.friendsname = {}
-        for friend in friends:
-            self.friendsname[str(friend['uid'])] = friend['name']
+        return friends
 
     def post_get_friends_list(self, widget, results):
+        friends = results
+        for friend in friends:
+            self.friendsname[str(friend['uid'])] = friend['name']
+            self.friendsprofilepic[str(friend['uid'])] = \
+                friend['pic_square']
+
         _log.info('%s has altogether %d friends in the database.' \
             % (self.friendsname[str(self._facebook.uid)],
             len(self.friendsname.keys())))
@@ -258,6 +263,35 @@ class MainWindow:
 
     def except_get_status_list(self, widget, exception):
         _log.error("Get status list exception: %s" % (str(exception)))
+
+    ### image download function
+    def _dl_profile_pic(self, uid, url):
+        request = urllib2.Request(url=url)
+        _log.debug('Starting request of %s' % (url))
+        response = urllib2.urlopen(request)
+        data = response.read()
+        _log.debug('Request completed')
+
+        return (uid, data)
+
+    ### Results from the picture request
+    def _post_dl_profile_pic(self, widget, data):
+        (uid, data) = data
+
+        loader = gtk.gdk.PixbufLoader()
+        loader.write(data)
+        loader.close()
+
+        user_pic = loader.get_pixbuf()
+        self._profilepics[uid] = user_pic
+
+        self.treeview.queue_draw()
+        return
+
+    def _exception_dl_profile_pic(self, widget, exception):
+        _log.debug('Exception trying to get a profile picture.')
+        _log.debug(str(exception))
+        return
 
     #-----------------
     # Helper functions
@@ -342,6 +376,15 @@ class MainWindow:
         self.treeview = gtk.TreeView(self.liststore)
         self.treeview.set_property('headers-visible', False)
         self.treeview.set_rules_hint(True)
+
+        profilepic_renderer = gtk.CellRendererPixbuf()
+        profilepic_column = gtk.TreeViewColumn('Profilepic', \
+            profilepic_renderer)
+        profilepic_column.set_fixed_width(50)
+        profilepic_column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
+        profilepic_column.set_cell_data_func(profilepic_renderer,
+                self._cell_renderer_profilepic)
+        self.treeview.append_column(profilepic_column)
 
         self.status_renderer = gtk.CellRendererText()
         #~ self.status_renderer.set_property('wrap-mode', gtk.WRAP_WORD)
@@ -479,6 +522,26 @@ class MainWindow:
             return 1
         return 0
 
+    def _cell_renderer_profilepic(self, column, cell, store, position):
+        uid = str(store.get_value(position, Columns.UID))
+        if not uid in self._profilepics:
+            profilepicurl = self.friendsprofilepic[uid]
+            if profilepicurl:
+                _log.debug('%s does not have profile picture stored, ' \
+                    'queuing fetch from %s' % (uid, profilepicurl))
+                self._threads.add_work(self._post_dl_profile_pic,
+                    self._exception_dl_profile_pic,
+                    self._dl_profile_pic,
+                    uid,
+                    profilepicurl)
+            else:
+                _log.debug('%s does not have profile picture set, ' % (uid))
+
+            self._profilepics[uid] = self._default_profilepic
+
+        cell.set_property('pixbuf', self._profilepics[uid])
+
+        return
 
     #------------------
     # Main Window start
@@ -486,15 +549,27 @@ class MainWindow:
     def __init__(self, facebook):
         global spelling_support
 
+        unknown_user = 'pixmaps/unknown_user.png'
+        if unknown_user:
+            self._default_profilepic = gtk.gdk.pixbuf_new_from_file(
+                    unknown_user)
+        else:
+            self._default_profilepic = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB,
+                    has_alpha=False, bits_per_sample=8, width=50, height=50)
+
         # create a new window
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        self.window.set_size_request(400, 250)
+        self.window.set_size_request(425, 250)
         self.window.set_title("Minibook")
         self.window.connect("delete_event", lambda w, e: gtk.main_quit())
 
         vbox = gtk.VBox(False, 0)
         self.window.add(vbox)
         vbox.show()
+
+        self.friendsname = {}
+        self.friendsprofilepic = {}
+        self._profilepics = {}
 
         self.create_grid()
         self.statuslist_window = gtk.ScrolledWindow()
