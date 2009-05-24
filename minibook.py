@@ -227,7 +227,7 @@ class MainWindow:
 
         _log.info("Fetching status updates published between %s and %s" \
             % (time.strftime("%c", time.localtime(since)),
-            time.strftime("%c", time.localtime(since))))
+            time.strftime("%c", time.localtime(till))))
 
         query = ('SELECT uid, time, status_id, message FROM status \
             WHERE (uid IN (SELECT uid2 FROM friend WHERE uid1 = %d) \
