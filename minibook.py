@@ -625,7 +625,7 @@ class MainWindow:
         self.window.show()
         self._facebook = facebook
 
-        self._app_icon = 'minibook.png'
+        self._app_icon = 'pixmaps/minibook.png'
         self._systray = gtk.StatusIcon()
         self._systray.set_from_file(self._app_icon)
         self._systray.set_tooltip('%s\n' \
