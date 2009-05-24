@@ -351,6 +351,22 @@ class MainWindow:
                 self.status_format)
         self.treeview.append_column(self.status_column)
         self.treeview.set_resize_mode(gtk.RESIZE_IMMEDIATE)
+        
+        self.treeview.connect('row-activated', self.open_status_web)
+
+    def open_status_web(self, treeview, path, view_column, user_data=None):
+        """ Callback to open status update in web browser when received
+        left click.
+        """
+        model = treeview.get_model()
+        if model:
+            iter = model.get_iter(path)
+            uid = model.get_value(iter, Columns.UID)
+            status_id = model.get_value(iter, Columns.STATUSID)
+            status_url = ('http://www.facebook.com/profile.php?' \
+                'id=%d&v=feed&story_fbid=%s' % (uid, status_id))
+            self.open_url(path, status_url)
+        return
 
     def _order_datetime(self, model, iter1, iter2, user_data=None):
         """Used by the ListStore to sort the columns (in our case, "column")
