@@ -43,8 +43,10 @@ LEVELS = {'debug': logging.DEBUG,
 
 if len(sys.argv) > 1:
     level_name = sys.argv[1]
-    level = LEVELS.get(level_name, logging.NOTSET)
+    level = LEVELS.get(level_name, logging.CRITICAL)
     logging.basicConfig(level=level)
+else:
+    logging.basicConfig(level=logging.CRITICAL)
 
 _log = logging.getLogger('minibook')
 
