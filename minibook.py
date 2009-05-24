@@ -353,6 +353,7 @@ class MainWindow:
         self.treeview.set_resize_mode(gtk.RESIZE_IMMEDIATE)
         
         self.treeview.connect('row-activated', self.open_status_web)
+        self.treeview.connect('button-press-event', self.click_status)
 
     def open_status_web(self, treeview, path, view_column, user_data=None):
         """ Callback to open status update in web browser when received
@@ -367,6 +368,98 @@ class MainWindow:
                 'id=%d&v=feed&story_fbid=%s' % (uid, status_id))
             self.open_url(path, status_url)
         return
+
+    def click_status(self, treeview, event, user_data=None):
+        """Callback when a mouse click event occurs on one of the rows."""
+        _log.debug('clicked on status list')
+        if event.button != 3:
+            # Only right clicks are processed
+            return False
+        _log.debug('right-click received')
+
+        x = int(event.x)
+        y = int(event.y)
+
+        pth = treeview.get_path_at_pos(x, y)
+        if not pth:
+            # The click wasn't on a row
+            return False
+
+        path, col, cell_x, cell_y = pth
+        treeview.grab_focus()
+        treeview.set_cursor(path, col, 0)
+
+        self.show_status_popup(treeview, event)
+        return True
+
+    def show_status_popup(self, treeview, event, user_data=None):
+        _log.debug('show popup menu')
+        cursor = treeview.get_cursor()
+        if not cursor:
+            return
+
+        path = cursor[0]
+        model = treeview.get_model()
+        if not model:
+            return
+        iter = model.get_iter(path)
+
+        popup_menu = gtk.Menu()
+        popup_menu.set_screen(self.window.get_screen())
+
+        # An open submenu with various choices underneath
+        open_menu_items = []
+
+        uid = model.get_value(iter, Columns.UID)
+        status_id = model.get_value(iter, Columns.STATUSID)
+        url = ('http://www.facebook.com/profile.php?' \
+            'id=%d&v=feed&story_fbid=%s' % (uid, status_id))
+        item_name = 'This status'
+        item = gtk.MenuItem(item_name)
+        item.connect('activate', self.open_url, url)
+        open_menu_items.append(item)
+
+        url = ('http://www.facebook.com/profile.php?' \
+            'id=%d' % (uid))
+        item_name = 'User wall'
+        item = gtk.MenuItem(item_name)
+        item.connect('activate', self.open_url, url)
+        open_menu_items.append(item)
+
+        url = ('http://www.facebook.com/profile.php?' \
+            'id=%d&v=info' % (uid))
+        item_name = 'User info'
+        item = gtk.MenuItem(item_name)
+        item.connect('activate', self.open_url, url)
+        open_menu_items.append(item)
+
+        url = ('http://www.facebook.com/profile.php?' \
+            'id=%d&v=photos' % (uid))
+        item_name = 'User photos'
+        item = gtk.MenuItem(item_name)
+        item.connect('activate', self.open_url, url)
+        open_menu_items.append(item)
+
+        open_menu = gtk.Menu()
+        for item in open_menu_items:
+            open_menu.append(item)
+
+        open_item = gtk.MenuItem("Open in browser")
+        open_item.set_submenu(open_menu)
+
+        popup_menu.append(open_item)
+        popup_menu.show_all()
+
+        if event:
+            b = event.button
+            t = event.time
+        else:
+            b = 1
+            t = 0
+
+        popup_menu.popup(None, None, None, b, t)
+
+        return True
 
     def _order_datetime(self, model, iter1, iter2, user_data=None):
         """Used by the ListStore to sort the columns (in our case, "column")
