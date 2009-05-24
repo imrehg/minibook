@@ -299,6 +299,13 @@ class MainWindow:
         cell.set_property('markup', markup)
         return
 
+    def open_url(self, source, url):
+        """Open url as new browser tab."""
+        _log.debug('Opening url: %s' % url)
+        import webbrowser
+        webbrowser.open_new_tab(url)
+        self.window.set_focus(self.entry)
+        
     #--------------------
     # Interface functions
     #--------------------
