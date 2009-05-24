@@ -53,8 +53,11 @@ class Columns:
 
 
 #-------------------------------------------------
-# From http://edsiper.linuxchile.cl/blog/?p=152
+# Threading related objects.
+# Info http://edsiper.linuxchile.cl/blog/?p=152
 # to mitigate TreeView + threads problems
+# These classes are based on the code available at http://gist.github.com/51686
+# (c) 2008, John Stowers <john.stowers@gmail.com>
 #-------------------------------------------------
 
 class _IdleObject(gobject.GObject):
@@ -219,7 +222,7 @@ class MainWindow:
             since = self._last_update
         else:
             now = int(time.time())
-            since = now - 5*24*60*60           
+            since = now - 5*24*60*60
         till = int(time.time())
 
         _log.info("Fetching status updates published between %s and %s" \
@@ -305,7 +308,7 @@ class MainWindow:
         import webbrowser
         webbrowser.open_new_tab(url)
         self.window.set_focus(self.entry)
-        
+
     #--------------------
     # Interface functions
     #--------------------
@@ -351,7 +354,7 @@ class MainWindow:
                 self.status_format)
         self.treeview.append_column(self.status_column)
         self.treeview.set_resize_mode(gtk.RESIZE_IMMEDIATE)
-        
+
         self.treeview.connect('row-activated', self.open_status_web)
         self.treeview.connect('button-press-event', self.click_status)
 
@@ -360,13 +363,15 @@ class MainWindow:
         left click.
         """
         model = treeview.get_model()
-        if model:
-            iter = model.get_iter(path)
-            uid = model.get_value(iter, Columns.UID)
-            status_id = model.get_value(iter, Columns.STATUSID)
-            status_url = ('http://www.facebook.com/profile.php?' \
-                'id=%d&v=feed&story_fbid=%s' % (uid, status_id))
-            self.open_url(path, status_url)
+        if not model:
+            return
+
+        iter = model.get_iter(path)
+        uid = model.get_value(iter, Columns.UID)
+        status_id = model.get_value(iter, Columns.STATUSID)
+        status_url = ('http://www.facebook.com/profile.php?' \
+            'id=%d&v=feed&story_fbid=%s' % (uid, status_id))
+        self.open_url(path, status_url)
         return
 
     def click_status(self, treeview, event, user_data=None):
@@ -382,7 +387,6 @@ class MainWindow:
 
         pth = treeview.get_path_at_pos(x, y)
         if not pth:
-            # The click wasn't on a row
             return False
 
         path, col, cell_x, cell_y = pth
@@ -397,17 +401,16 @@ class MainWindow:
         cursor = treeview.get_cursor()
         if not cursor:
             return
-
-        path = cursor[0]
         model = treeview.get_model()
         if not model:
             return
+
+        path = cursor[0]
         iter = model.get_iter(path)
 
         popup_menu = gtk.Menu()
         popup_menu.set_screen(self.window.get_screen())
 
-        # An open submenu with various choices underneath
         open_menu_items = []
 
         uid = model.get_value(iter, Columns.UID)
