@@ -395,7 +395,8 @@ class MainWindow:
         self.treeview.append_column(profilepic_column)
 
         self.status_renderer = gtk.CellRendererText()
-        #~ self.status_renderer.set_property('wrap-mode', gtk.WRAP_WORD)
+        # wrapping: pango.WRAP_WORD = 0, don't need to import pango for that
+        self.status_renderer.set_property('wrap-mode', 0)
         self.status_renderer.set_property('wrap-width', 350)
         self.status_renderer.set_property('width', 10)
 
