@@ -261,6 +261,13 @@ class MainWindow:
                 '0',
                 '0'))
         self._last_update = results[1]
+
+        if len(updates) > 0:
+            # Scroll to latest status if added any new ones
+            model = self.treeview.get_model()
+            first_iter = model.get_iter_first()
+            first_path = model.get_path(first_iter)
+            self.treeview.scroll_to_cell(first_path)
         return
 
     def except_get_status_list(self, widget, exception):
@@ -370,12 +377,11 @@ class MainWindow:
             gobject.TYPE_STRING,
             gobject.TYPE_STRING,
             gobject.TYPE_STRING)
-        self.liststore.set_sort_column_id(Columns.DATETIME, \
-            gtk.SORT_DESCENDING)
-        self.liststore.set_sort_func(Columns.DATETIME, \
-            self._order_datetime)
 
-        self.treeview = gtk.TreeView(self.liststore)
+        self.sorter = gtk.TreeModelSort(self.liststore)
+        self.sorter.set_sort_column_id(Columns.DATETIME, gtk.SORT_DESCENDING)
+        self.treeview = gtk.TreeView(self.sorter)
+        
         self.treeview.set_property('headers-visible', False)
         self.treeview.set_rules_hint(True)
 
@@ -508,21 +514,6 @@ class MainWindow:
         popup_menu.popup(None, None, None, b, t)
 
         return True
-
-    def _order_datetime(self, model, iter1, iter2, user_data=None):
-        """Used by the ListStore to sort the columns (in our case, "column")
-        by date."""
-        time1 = model.get_value(iter1, Columns.DATETIME)
-        time2 = model.get_value(iter2, Columns.DATETIME)
-
-        if (not time1) or \
-                 (time1 < time2):
-            return -1
-
-        if (not time2) or \
-                (time1 > time2):
-            return 1
-        return 0
 
     def _cell_renderer_profilepic(self, column, cell, store, position):
         uid = str(store.get_value(position, Columns.UID))
