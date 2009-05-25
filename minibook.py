@@ -254,11 +254,11 @@ class MainWindow:
         _log.debug('Status updates successfully pulled.')
         updates = results[0]
         self._last_update = results[1]
-        
+
         # There are no updates
         if len(updates) == 0:
             return
-            
+
         # There are new updates
         updates.reverse()
         for up in updates:
@@ -386,7 +386,7 @@ class MainWindow:
         self.sorter = gtk.TreeModelSort(self.liststore)
         self.sorter.set_sort_column_id(Columns.DATETIME, gtk.SORT_DESCENDING)
         self.treeview = gtk.TreeView(self.sorter)
-        
+
         self.treeview.set_property('headers-visible', False)
         self.treeview.set_rules_hint(True)
 
