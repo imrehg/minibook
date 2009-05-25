@@ -253,6 +253,14 @@ class MainWindow:
     def post_get_status_list(self, widget, results):
         _log.debug('Status updates successfully pulled.')
         updates = results[0]
+        self._last_update = results[1]
+        
+        # There are no updates
+        if len(updates) == 0:
+            return
+            
+        # There are new updates
+        updates.reverse()
         for up in updates:
             self.liststore.prepend((up['status_id'],
                 up['uid'],
@@ -260,14 +268,11 @@ class MainWindow:
                 up['time'],
                 '0',
                 '0'))
-        self._last_update = results[1]
-
-        if len(updates) > 0:
-            # Scroll to latest status if added any new ones
-            model = self.treeview.get_model()
-            first_iter = model.get_iter_first()
-            first_path = model.get_path(first_iter)
-            self.treeview.scroll_to_cell(first_path)
+        # Scroll to latest status in view
+        model = self.treeview.get_model()
+        first_iter = model.get_iter_first()
+        first_path = model.get_path(first_iter)
+        self.treeview.scroll_to_cell(first_path)
         return
 
     def except_get_status_list(self, widget, exception):
