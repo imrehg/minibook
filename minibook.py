@@ -196,6 +196,8 @@ class MainWindow:
             self._facebook.status.set([entry_text], [self._facebook.uid])
 
             textfield.set_text("")
+            # wait a little before getting new updates, so FB can catch up
+            time.sleep(2)
             self.refresh()
 
     #------------------------------
