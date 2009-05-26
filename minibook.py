@@ -511,7 +511,10 @@ class MainWindow:
         for item in open_menu_items:
             open_menu.append(item)
 
-        open_item = gtk.MenuItem("Open in browser")
+        # Menu item to open different pages connected to status in browser
+        open_item = gtk.ImageMenuItem('Open in browser')
+        open_item.get_image().set_from_stock(gtk.STOCK_GO_FORWARD, \
+            gtk.ICON_SIZE_MENU)
         open_item.set_submenu(open_menu)
         popup_menu.append(open_item)
         
@@ -519,7 +522,9 @@ class MainWindow:
         message = model.get_value(iter, Columns.STATUS)
         name = self.friendsname[str(uid)]
         text = ("%s %s" % (name, message))
-        copy_item = gtk.MenuItem("Copy status")
+        copy_item = gtk.ImageMenuItem('Copy status')
+        copy_item.get_image().set_from_stock(gtk.STOCK_COPY, \
+            gtk.ICON_SIZE_MENU)
         copy_item.connect('activate', self.copy_status_to_clipboard, text)
         popup_menu.append(copy_item)
 
