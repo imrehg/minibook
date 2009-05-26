@@ -400,7 +400,7 @@ class MainWindow:
         profilepic_renderer = gtk.CellRendererPixbuf()
         profilepic_column = gtk.TreeViewColumn('Profilepic', \
             profilepic_renderer)
-        profilepic_column.set_fixed_width(50)
+        profilepic_column.set_fixed_width(55)
         profilepic_column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
         profilepic_column.set_cell_data_func(profilepic_renderer,
                 self._cell_renderer_profilepic)
