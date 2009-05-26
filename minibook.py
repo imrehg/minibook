@@ -314,6 +314,7 @@ class MainWindow:
 
     ### get comments and likes 
     def _get_cl_list(self):
+        _log.info('Pulling comments & likes for listed status updates')
         post_id = []
         for row in self.liststore:
             post_id.append('post_id = "%d_%s"' % (row[Columns.UID], \
