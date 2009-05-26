@@ -52,7 +52,7 @@ _log = logging.getLogger('minibook')
 
 
 class Columns:
-    (STATUSID, UID, STATUS, DATETIME, REPLIES, LIKES) = range(6)
+    (STATUSID, UID, STATUS, DATETIME, COMMENTS, LIKES) = range(6)
 
 
 #-------------------------------------------------
@@ -275,6 +275,9 @@ class MainWindow:
         first_iter = model.get_iter_first()
         first_path = model.get_path(first_iter)
         self.treeview.scroll_to_cell(first_path)
+        self._threads.add_work(self._post_get_cl_list,
+            self._except_get_cl_list,
+            self._get_cl_list)
         return
 
     def except_get_status_list(self, widget, exception):
@@ -307,6 +310,38 @@ class MainWindow:
     def _exception_dl_profile_pic(self, widget, exception):
         _log.debug('Exception trying to get a profile picture.')
         _log.debug(str(exception))
+        return
+
+    ### get comments and likes 
+    def _get_cl_list(self):
+        post_id = []
+        for row in self.liststore:
+            post_id.append('post_id = "%d_%s"' % (row[Columns.UID], \
+                row[Columns.STATUSID]))
+        all_id = ' OR '.join(post_id)
+        query = ('SELECT post_id, comments, likes FROM stream WHERE (%s)' % \
+            (all_id))
+        _log.debug('Comments & Likes query: %s' % (query))
+        cl_list = self._facebook.fql.query([query])
+        return(cl_list)
+
+    ### Results from the picture request
+    def _post_get_cl_list(self, widget, data):
+        likes_list = {}
+        comments_list = {}
+        for item in data:
+            status_id = item['post_id'].split("_")[1]
+            likes_list[status_id] = str(item['likes']['count'])
+            comments_list[status_id] = str(item['comments']['count'])
+        for row in self.liststore:
+            rowstatus = row[Columns.STATUSID]
+            row[Columns.LIKES] = likes_list[rowstatus]
+            row[Columns.COMMENTS] = comments_list[rowstatus]
+        return
+
+    def _except_get_cl_list(self, widget, exception):
+        _log.error('Exception while getting comments and likes')
+        _log.error(str(exception))
         return
 
     #-----------------
@@ -397,6 +432,7 @@ class MainWindow:
         self.treeview.set_property('headers-visible', False)
         self.treeview.set_rules_hint(True)
 
+        # Column showing profile picture
         profilepic_renderer = gtk.CellRendererPixbuf()
         profilepic_column = gtk.TreeViewColumn('Profilepic', \
             profilepic_renderer)
@@ -406,17 +442,54 @@ class MainWindow:
                 self._cell_renderer_profilepic)
         self.treeview.append_column(profilepic_column)
 
+        # Column showing status text
         self.status_renderer = gtk.CellRendererText()
         # wrapping: pango.WRAP_WORD = 0, don't need to import pango for that
         self.status_renderer.set_property('wrap-mode', 0)
-        self.status_renderer.set_property('wrap-width', 350)
-        self.status_renderer.set_property('width', 10)
-
+        self.status_renderer.set_property('wrap-width', 320)
+        self.status_renderer.set_property('width', 320)
         self.status_column = gtk.TreeViewColumn('Message', \
                 self.status_renderer, text=1)
         self.status_column.set_cell_data_func(self.status_renderer, \
                 self.status_format)
         self.treeview.append_column(self.status_column)
+
+        # Showing the number of comments
+        comments_renderer = gtk.CellRendererText()
+        comments_column = gtk.TreeViewColumn('Comments', \
+                comments_renderer, text=1)
+        comments_column.set_cell_data_func(comments_renderer, \
+                self._cell_renderer_comments)
+        self.treeview.append_column(comments_column)
+
+        # Showing the comments icon
+        commentspic_renderer = gtk.CellRendererPixbuf()
+        commentspic_column = gtk.TreeViewColumn('CommentsPic', \
+                commentspic_renderer)
+        commentspic_column.set_cell_data_func(commentspic_renderer, \
+                self._cell_renderer_commentspic)
+        commentspic_column.set_fixed_width(28)
+        commentspic_column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
+        self.treeview.append_column(commentspic_column)
+        
+        # Showing the number of likes
+        likes_renderer = gtk.CellRendererText()
+        likes_column = gtk.TreeViewColumn('Likes', \
+                likes_renderer, text=1)
+        likes_column.set_cell_data_func(likes_renderer, \
+                self._cell_renderer_likes)
+        self.treeview.append_column(likes_column)
+
+        # Showing the likes icon
+        likespic_renderer = gtk.CellRendererPixbuf()
+        likespic_column = gtk.TreeViewColumn('Likespic', \
+                likespic_renderer)
+        likespic_column.set_cell_data_func(likespic_renderer, \
+                self._cell_renderer_likespic)
+        likespic_column.set_fixed_width(28)
+        likespic_column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
+        self.treeview.append_column(likespic_column)
+
         self.treeview.set_resize_mode(gtk.RESIZE_IMMEDIATE)
 
         self.treeview.connect('row-activated', self.open_status_web)
@@ -562,6 +635,34 @@ class MainWindow:
 
         return
 
+    def _cell_renderer_comments(self, column, cell, store, position):
+        comments = int(store.get_value(position, Columns.COMMENTS))
+        if comments > 0:
+            cell.set_property('text', str(comments))
+        else:
+            cell.set_property('text', '')
+
+    def _cell_renderer_commentspic(self, column, cell, store, position):
+        comments = int(store.get_value(position, Columns.COMMENTS))
+        if comments > 0:
+            cell.set_property('pixbuf', self.commentspic)
+        else:
+            cell.set_property('pixbuf', None)
+
+    def _cell_renderer_likes(self, column, cell, store, position):
+        likes = int(store.get_value(position, Columns.LIKES))
+        if likes > 0:
+            cell.set_property('text', str(likes))
+        else:
+            cell.set_property('text', '')
+
+    def _cell_renderer_likespic(self, column, cell, store, position):
+        likes = int(store.get_value(position, Columns.LIKES))
+        if likes > 0:
+            cell.set_property('pixbuf', self.likespic)
+        else:
+            cell.set_property('pixbuf', None)
+
     #------------------
     # Main Window start
     #------------------
@@ -576,9 +677,12 @@ class MainWindow:
             self._default_profilepic = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB,
                     has_alpha=False, bits_per_sample=8, width=50, height=50)
 
+        self.commentspic = gtk.gdk.pixbuf_new_from_file('pixmaps/comments.png')
+        self.likespic = gtk.gdk.pixbuf_new_from_file('pixmaps/likes.png')
+
         # create a new window
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        self.window.set_size_request(425, 250)
+        self.window.set_size_request(480, 250)
         self.window.set_title("Minibook")
         self.window.connect("delete_event", lambda w, e: gtk.main_quit())
 
