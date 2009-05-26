@@ -358,6 +358,11 @@ class MainWindow:
         import webbrowser
         webbrowser.open_new_tab(url)
         self.window.set_focus(self.entry)
+        
+    def copy_status_to_clipboard(self, source, text):
+        clipboard = gtk.Clipboard()
+        _log.debug('Copying to clipboard: %s' % (text))
+        clipboard.set_text(text)
 
     #--------------------
     # Interface functions
@@ -508,8 +513,16 @@ class MainWindow:
 
         open_item = gtk.MenuItem("Open in browser")
         open_item.set_submenu(open_menu)
-
         popup_menu.append(open_item)
+        
+        # Menu item to copy status message to clipboard
+        message = model.get_value(iter, Columns.STATUS)
+        name = self.friendsname[str(uid)]
+        text = ("%s %s" % (name, message))
+        copy_item = gtk.MenuItem("Copy status")
+        copy_item.connect('activate', self.copy_status_to_clipboard, text)
+        popup_menu.append(copy_item)
+
         popup_menu.show_all()
 
         if event:
