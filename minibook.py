@@ -336,8 +336,17 @@ class MainWindow:
             comments_list[status_id] = str(item['comments']['count'])
         for row in self.liststore:
             rowstatus = row[Columns.STATUSID]
-            row[Columns.LIKES] = likes_list[rowstatus]
-            row[Columns.COMMENTS] = comments_list[rowstatus]
+            # have to check if post really exists, deleted post still
+            # show up in "status" table sometimes, but not in "stream"
+            if rowstatus in likes_list.keys():
+                row[Columns.LIKES] = likes_list[rowstatus]
+                row[Columns.COMMENTS] = comments_list[rowstatus]
+            else:
+                _log.debug("Possible deleted status update: " \
+                "uid: %d, status_id: %s, user: %s, text: %s, time: %s" \
+                % (row[Columns.UID], rowstatus, \
+                self.friendsname[str(row[Columns.UID])], \
+                row[Columns.STATUS], row[Columns.DATETIME]))
         return
 
     def _except_get_cl_list(self, widget, exception):
