@@ -204,9 +204,9 @@ class MainWindow:
     # Information pulling functions
     #------------------------------
     def get_friends_list(self):
-        query = ("SELECT uid, name, pic_square FROM user \
-            WHERE (uid IN (SELECT uid2 FROM friend WHERE uid1 = %d) \
-            OR uid = %d)" % (self._facebook.uid, self._facebook.uid))
+        query = ("SELECT uid, name, pic_square FROM user "\
+            "WHERE (uid IN (SELECT uid2 FROM friend WHERE uid1 = %d) "\
+            "OR uid = %d)" % (self._facebook.uid, self._facebook.uid))
         friends = self._facebook.fql.query([query])
         return friends
 
@@ -238,12 +238,12 @@ class MainWindow:
             % (time.strftime("%c", time.localtime(since)),
             time.strftime("%c", time.localtime(till))))
 
-        query = ('SELECT uid, time, status_id, message FROM status \
-            WHERE (uid IN (SELECT uid2 FROM friend WHERE uid1 = %d) \
-            OR uid = %d) \
-            AND time  > %d AND time < %d\
-            ORDER BY time DESC\
-            LIMIT 60' \
+        query = ('SELECT uid, time, status_id, message FROM status '\
+            'WHERE (uid IN (SELECT uid2 FROM friend WHERE uid1 = %d) '\
+            'OR uid = %d) '\
+            'AND time  > %d AND time < %d '\
+            'ORDER BY time DESC '\
+            'LIMIT 100'
             % (self._facebook.uid, self._facebook.uid, since, till))
         _log.debug('Status list query: %s' % (query))
 
