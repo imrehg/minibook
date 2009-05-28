@@ -789,7 +789,7 @@ if __name__ == "__main__":
         secret_key = config_file.readline()[:-1]
         _log.debug('Config file loaded successfully')
     except Exception, e:
-        _log.error('Error while loading config file: %s' % (str(e)))
+        _log.critical('Error while loading config file: %s' % (str(e)))
         exit(1)
 
     facebook = Facebook(api_key, secret_key)
