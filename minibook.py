@@ -813,8 +813,8 @@ if __name__ == "__main__":
         gtk.DIALOG_DESTROY_WITH_PARENT | \
         gtk.DIALOG_NO_SEPARATOR,
         ("Logged in", gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
-    label = gtk.Label("%s is opening your web browser to log in Facebook.\n' \
-        When finished, click 'Logged in', or you can cancel now." % (APPNAME))
+    label = gtk.Label("%s is opening your web browser to log in Facebook.\n" \
+        "When finished, click 'Logged in', or you can cancel now." % (APPNAME))
     dia.vbox.pack_start(label, True, True, 10)
     label.show()
     dia.show()
