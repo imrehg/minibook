@@ -793,7 +793,16 @@ if __name__ == "__main__":
         exit(1)
 
     facebook = Facebook(api_key, secret_key)
-    facebook.auth.createToken()
+    try:
+        facebook.auth.createToken()
+    except:
+        # Like catch errors like
+        # http://bugs.developers.facebook.com/show_bug.cgi?id=5474
+        # and http://bugs.developers.facebook.com/show_bug.cgi?id=5472
+        _log.critical("Error on Facebook's side, " \
+            "try starting application later")
+        exit(1)
+
     facebook.login()
     _log.debug('Showing Facebook login page in default browser.')
 
