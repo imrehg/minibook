@@ -257,24 +257,23 @@ class MainWindow:
         updates = results[0]
         self._last_update = results[1]
 
-        # There are no updates
-        if len(updates) == 0:
-            return
-
         # There are new updates
-        updates.reverse()
-        for up in updates:
-            self.liststore.prepend((up['status_id'],
-                up['uid'],
-                up['message'],
-                up['time'],
-                '0',
-                '0'))
-        # Scroll to latest status in view
-        model = self.treeview.get_model()
-        first_iter = model.get_iter_first()
-        first_path = model.get_path(first_iter)
-        self.treeview.scroll_to_cell(first_path)
+        if len(updates)  > 0:
+            updates.reverse()
+            for up in updates:
+                self.liststore.prepend((up['status_id'],
+                    up['uid'],
+                    up['message'],
+                    up['time'],
+                    '0',
+                    '0'))
+            # Scroll to latest status in view
+            model = self.treeview.get_model()
+            first_iter = model.get_iter_first()
+            first_path = model.get_path(first_iter)
+            self.treeview.scroll_to_cell(first_path)
+
+        # pull comments and likes too
         self._threads.add_work(self._post_get_cl_list,
             self._except_get_cl_list,
             self._get_cl_list)
