@@ -231,7 +231,7 @@ class MainWindow:
             since = self._last_update
         else:
             now = int(time.time())
-            since = now - 4.95*24*60*60
+            since = now - 5*24*60*60
         till = int(time.time())
 
         _log.info("Fetching status updates published between %s and %s" \
