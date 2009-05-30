@@ -238,12 +238,14 @@ class MainWindow:
             % (time.strftime("%c", time.localtime(since)),
             time.strftime("%c", time.localtime(till))))
 
-        query = ('SELECT uid, time, status_id, message FROM status '\
-            'WHERE (uid IN (SELECT uid2 FROM friend WHERE uid1 = %d) '\
-            'OR uid = %d) '\
-            'AND time  > %d AND time < %d '\
-            'ORDER BY time DESC '\
-            'LIMIT 100'
+        query = ("SELECT source_id, created_time, post_id, message " \
+            "FROM stream "\
+            "WHERE ((source_id IN (SELECT uid2 FROM friend WHERE uid1 = %d) "\
+            "OR source_id = %d) "\
+            "AND created_time  > %d AND created_time < %d "\
+            "AND attachment = '' AND target_id = '') "\
+            "ORDER BY created_time DESC "\
+            "LIMIT 100"
             % (self._facebook.uid, self._facebook.uid, since, till))
         _log.debug('Status list query: %s' % (query))
 
@@ -255,16 +257,16 @@ class MainWindow:
     def post_get_status_list(self, widget, results):
         _log.debug('Status updates successfully pulled.')
         updates = results[0]
-        self._last_update = results[1]
+        till = results[1]
 
         # There are new updates
         if len(updates)  > 0:
             updates.reverse()
             for up in updates:
-                self.liststore.prepend((up['status_id'],
-                    up['uid'],
+                self.liststore.prepend((up['post_id'],
+                    up['source_id'],
                     up['message'],
-                    up['time'],
+                    up['created_time'],
                     '0',
                     '0'))
             # Scroll to latest status in view
@@ -276,7 +278,8 @@ class MainWindow:
         # pull comments and likes too
         self._threads.add_work(self._post_get_cl_list,
             self._except_get_cl_list,
-            self._get_cl_list)
+            self._get_cl_list,
+            till)
         return
 
     def except_get_status_list(self, widget, exception):
@@ -312,27 +315,36 @@ class MainWindow:
         return
 
     ### get comments and likes 
-    def _get_cl_list(self):
+    def _get_cl_list(self, till):
         _log.info('Pulling comments & likes for listed status updates')
+        
         post_id = []
         for row in self.liststore:
-            post_id.append('post_id = "%d_%s"' % (row[Columns.UID], \
-                row[Columns.STATUSID]))
+            post_id.append('post_id = "%s"' % (row[Columns.STATUSID]))
         all_id = ' OR '.join(post_id)
-        query = ('SELECT post_id, comments, likes FROM stream WHERE (%s)' % \
-            (all_id))
+
+        query = ('SELECT post_id, comments, likes FROM stream WHERE ((%s) ' \
+            'AND updated_time > %d AND updated_time < %d)' % \
+            (all_id, self._last_update, till))
         _log.debug('Comments & Likes query: %s' % (query))
+        
         cl_list = self._facebook.fql.query([query])
-        return(cl_list)
+        
+        return (cl_list, till)
 
     ### Results from the picture request
     def _post_get_cl_list(self, widget, data):
+        list = data[0]
+        till = data[1]
+        
         likes_list = {}
         comments_list = {}
-        for item in data:
-            status_id = item['post_id'].split("_")[1]
+        
+        for item in list:
+            status_id = item['post_id']
             likes_list[status_id] = str(item['likes']['count'])
             comments_list[status_id] = str(item['comments']['count'])
+            
         for row in self.liststore:
             rowstatus = row[Columns.STATUSID]
             # have to check if post really exists, deleted post still
@@ -346,6 +358,8 @@ class MainWindow:
                 % (row[Columns.UID], rowstatus, \
                 self.friendsname[str(row[Columns.UID])], \
                 row[Columns.STATUS], row[Columns.DATETIME]))
+
+        self._last_update = till
         return
 
     def _except_get_cl_list(self, widget, exception):
@@ -428,9 +442,9 @@ class MainWindow:
 
     def create_grid(self):
         self.liststore = gtk.ListStore(gobject.TYPE_STRING,
+            gobject.TYPE_STRING,
+            gobject.TYPE_STRING,
             gobject.TYPE_INT,
-            gobject.TYPE_STRING,
-            gobject.TYPE_STRING,
             gobject.TYPE_STRING,
             gobject.TYPE_STRING)
 
@@ -514,9 +528,9 @@ class MainWindow:
 
         iter = model.get_iter(path)
         uid = model.get_value(iter, Columns.UID)
-        status_id = model.get_value(iter, Columns.STATUSID)
+        status_id = model.get_value(iter, Columns.STATUSID).split("_")[1]
         status_url = ('http://www.facebook.com/profile.php?' \
-            'id=%d&v=feed&story_fbid=%s' % (uid, status_id))
+            'id=%s&v=feed&story_fbid=%s' % (uid, status_id))
         self.open_url(path, status_url)
         return
 
@@ -560,30 +574,30 @@ class MainWindow:
         open_menu_items = []
 
         uid = model.get_value(iter, Columns.UID)
-        status_id = model.get_value(iter, Columns.STATUSID)
+        status_id = model.get_value(iter, Columns.STATUSID).split("_")[1]
         url = ('http://www.facebook.com/profile.php?' \
-            'id=%d&v=feed&story_fbid=%s' % (uid, status_id))
+            'id=%s&v=feed&story_fbid=%s' % (uid, status_id))
         item_name = 'This status'
         item = gtk.MenuItem(item_name)
         item.connect('activate', self.open_url, url)
         open_menu_items.append(item)
 
         url = ('http://www.facebook.com/profile.php?' \
-            'id=%d' % (uid))
+            'id=%s' % (uid))
         item_name = 'User wall'
         item = gtk.MenuItem(item_name)
         item.connect('activate', self.open_url, url)
         open_menu_items.append(item)
 
         url = ('http://www.facebook.com/profile.php?' \
-            'id=%d&v=info' % (uid))
+            'id=%s&v=info' % (uid))
         item_name = 'User info'
         item = gtk.MenuItem(item_name)
         item.connect('activate', self.open_url, url)
         open_menu_items.append(item)
 
         url = ('http://www.facebook.com/profile.php?' \
-            'id=%d&v=photos' % (uid))
+            'id=%s&v=photos' % (uid))
         item_name = 'User photos'
         item = gtk.MenuItem(item_name)
         item.connect('activate', self.open_url, url)
