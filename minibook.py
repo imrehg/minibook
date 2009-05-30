@@ -375,7 +375,7 @@ class MainWindow:
                 row[Columns.COMMENTS] = comments_list[rowstatus]
             else:
                 _log.debug("Possible deleted status update: " \
-                "uid: %d, status_id: %s, user: %s, text: %s, time: %s" \
+                "uid: %s, status_id: %s, user: %s, text: %s, time: %s" \
                 % (row[Columns.UID], rowstatus, \
                 self.friendsname[str(row[Columns.UID])], \
                 row[Columns.STATUS], row[Columns.DATETIME]))
