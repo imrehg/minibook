@@ -260,7 +260,7 @@ class MainWindow:
         till = results[1]
 
         # There are new updates
-        if len(updates)  > 0:
+        if len(updates) > 0:
             updates.reverse()
             for up in updates:
                 self.liststore.prepend((up['post_id'],
@@ -314,10 +314,10 @@ class MainWindow:
         _log.debug(str(exception))
         return
 
-    ### get comments and likes 
+    ### get comments and likes
     def _get_cl_list(self, till):
         _log.info('Pulling comments & likes for listed status updates')
-        
+
         post_id = []
         for row in self.liststore:
             post_id.append('post_id = "%s"' % (row[Columns.STATUSID]))
@@ -327,24 +327,24 @@ class MainWindow:
             'AND updated_time > %d AND updated_time < %d)' % \
             (all_id, self._last_update, till))
         _log.debug('Comments & Likes query: %s' % (query))
-        
+
         cl_list = self._facebook.fql.query([query])
-        
+
         return (cl_list, till)
 
     ### Results from the picture request
     def _post_get_cl_list(self, widget, data):
         list = data[0]
         till = data[1]
-        
+
         likes_list = {}
         comments_list = {}
-        
+
         for item in list:
             status_id = item['post_id']
             likes_list[status_id] = str(item['likes']['count'])
             comments_list[status_id] = str(item['comments']['count'])
-            
+
         for row in self.liststore:
             rowstatus = row[Columns.STATUSID]
             # have to check if post really exists, deleted post still
@@ -416,7 +416,7 @@ class MainWindow:
         import webbrowser
         webbrowser.open_new_tab(url)
         self.window.set_focus(self.entry)
-        
+
     def copy_status_to_clipboard(self, source, text):
         clipboard = gtk.Clipboard()
         _log.debug('Copying to clipboard: %s' % (text))
@@ -494,7 +494,7 @@ class MainWindow:
         commentspic_column.set_fixed_width(28)
         commentspic_column.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
         self.treeview.append_column(commentspic_column)
-        
+
         # Showing the number of likes
         likes_renderer = gtk.CellRendererText()
         likes_column = gtk.TreeViewColumn('Likes', \
@@ -613,7 +613,7 @@ class MainWindow:
             gtk.ICON_SIZE_MENU)
         open_item.set_submenu(open_menu)
         popup_menu.append(open_item)
-        
+
         # Menu item to copy status message to clipboard
         message = model.get_value(iter, Columns.STATUS)
         name = self.friendsname[str(uid)]
