@@ -807,40 +807,29 @@ class MainWindow:
         self.statuslist_window.show()
         vbox.add(self.statuslist_window)
 
-        hbox = gtk.HBox(False, 0)
-
+        label_box = gtk.HBox(False, 0)
         label = gtk.Label("What's on your mind?")
-        hbox.pack_start(label, True, True, 0)
-        label.show()
         self.count_label = gtk.Label("(160)")
-        hbox.pack_start(self.count_label, True, True, 0)
-        self.count_label.show()
-        vbox.add(hbox)
-        hbox.show()
+        label_box.pack_start(label)
+        label_box.pack_start(self.count_label)
 
         self.entry = gtk.TextView()
         text = self.entry.get_buffer()
         text.connect('changed', self.count)
-        vbox.pack_start(self.entry, True, True, 0)
-        self.entry.show()
+        text_box = gtk.VBox(True, 0)
+        text_box.pack_start(label_box)
+        text_box.pack_start(self.entry)
 
-        hbox = gtk.HBox(False, 0)
-        vbox.add(hbox)
-        hbox.show()
+        update_button = gtk.Button(stock=gtk.STOCK_ADD)
+        update_button.connect("clicked", lambda w: self.sendupdate())
 
-        button = gtk.Button(stock=gtk.STOCK_CLOSE)
-        button.connect("clicked", lambda w: gtk.main_quit())
-        hbox.pack_start(button, True, True, 0)
-        button.set_flags(gtk.CAN_DEFAULT)
-        button.grab_default()
-        button.show()
+        update_box = gtk.HBox(False, 0)
+        update_box.pack_start(text_box, expand=True, fill=True,
+                padding=0)
+        update_box.pack_start(update_button, expand=False, fill=False,
+                padding=0)
 
-        button = gtk.Button(stock=gtk.STOCK_ADD)
-        button.connect("clicked", lambda w: self.sendupdate())
-        hbox.pack_start(button, True, True, 0)
-        button.set_flags(gtk.CAN_DEFAULT)
-        button.grab_default()
-        button.show()
+        vbox.pack_start(update_box, False, True, 0)
 
         if spelling_support:
             try:
@@ -848,7 +837,7 @@ class MainWindow:
             except:
                 spelling_support = False
 
-        self.window.show()
+        self.window.show_all()
         self._facebook = facebook
 
         self._app_icon = 'pixmaps/minibook.png'
