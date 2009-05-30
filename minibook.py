@@ -5,6 +5,27 @@
 
 VERSION = '0.1.0'
 APPNAME = 'minibook'
+MIT = """
+Copyright (c) 2009 Gergely Imreh <imrehg@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+"""
 
 import pygtk
 pygtk.require('2.0')
@@ -387,7 +408,7 @@ class MainWindow:
         _log.info("Auto-refresh enabled: %d minutes" \
             % (self._prefs['auto_refresh_interval']))
 
-    def refresh(self):
+    def refresh(self, widget=None):
         _log.info('Refreshing now at %s' % (time.strftime('%H:%M:%S')))
         self._threads.add_work(self.post_get_status_list,
             self.except_get_status_list,
@@ -425,6 +446,9 @@ class MainWindow:
     #--------------------
     # Interface functions
     #--------------------
+    def quit(self, widget):
+        gtk.main_quit()
+
     def systray_click(self, widget, user_param=None):
         if self.window.get_property('visible'):
             _log.debug('Hiding window')
@@ -517,6 +541,60 @@ class MainWindow:
 
         self.treeview.connect('row-activated', self.open_status_web)
         self.treeview.connect('button-press-event', self.click_status)
+
+    def create_menubar(self):
+        refresh_action = gtk.Action('Refresh', '_Refresh',
+                'Get new status updates', gtk.STOCK_REFRESH)
+        refresh_action.connect('activate', self.refresh)
+
+        quit_action = gtk.Action('Quit', '_Quit',
+                'Exit %s' % (APPNAME), gtk.STOCK_QUIT)
+        quit_action.connect('activate', self.quit)
+
+        about_action = gtk.Action('About', '_About', 'About %s' % (APPNAME),
+                gtk.STOCK_ABOUT)
+        about_action.connect('activate', self.show_about)
+
+        self.action_group = gtk.ActionGroup('MainMenu')
+        self.action_group.add_action_with_accel(refresh_action, 'F5')
+        # None = use the default acceletator
+        self.action_group.add_action_with_accel(quit_action, None)
+        self.action_group.add_action(about_action)
+
+        uimanager = gtk.UIManager()
+        uimanager.insert_action_group(self.action_group, 0)
+        ui = '''
+        <ui>
+          <menubar name="MainMenu">
+            <menuitem action="Quit" />
+            <separator />
+            <menuitem action="Refresh" />
+            <separator />
+            <menuitem action="About" />
+          </menubar>
+       </ui>
+        '''
+        uimanager.add_ui_from_string(ui)
+        self.main_menu = uimanager.get_widget('/MainMenu')
+        return
+
+    def show_about(self, widget):
+        """Show the about dialog."""
+        about_window = gtk.AboutDialog()
+        about_window.set_name(APPNAME)
+        about_window.set_version(VERSION)
+        about_window.set_copyright('2009 Gergely Imreh')
+        about_window.set_license(MIT)
+        about_window.set_website('http://imrehg.github.com/minibook/')
+        about_window.set_website_label('%s on GitHub' % (APPNAME))
+        about_window.set_authors(['Gergely Imreh'])
+        about_window.connect('close', self.close_dialog)
+        about_window.run()
+        about_window.hide()
+
+    def close_dialog(self, user_data=None):
+        """Hide the dialog window."""
+        return True
 
     def open_status_web(self, treeview, path, view_column, user_data=None):
         """ Callback to open status update in web browser when received
@@ -716,6 +794,10 @@ class MainWindow:
         self.friendsname = {}
         self.friendsprofilepic = {}
         self._profilepics = {}
+
+        self.create_menubar()
+        vbox.pack_start(self.main_menu, False, True, 0)
+        self.main_menu.show()
 
         self.create_grid()
         self.statuslist_window = gtk.ScrolledWindow()
