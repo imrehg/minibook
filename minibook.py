@@ -835,7 +835,6 @@ class MainWindow:
 
         vbox = gtk.VBox(False, 0)
         self.window.add(vbox)
-        vbox.show()
 
         self.friendsname = {}
         self.friendsprofilepic = {}
@@ -845,14 +844,11 @@ class MainWindow:
 
         self.create_menubar()
         vbox.pack_start(self.main_menu, False, True, 0)
-        self.main_menu.show()
 
         self.create_grid()
         self.statuslist_window = gtk.ScrolledWindow()
         self.statuslist_window.set_policy(gtk.POLICY_NEVER, gtk.POLICY_ALWAYS)
         self.statuslist_window.add(self.treeview)
-        self.treeview.show()
-        self.statuslist_window.show()
         vbox.add(self.statuslist_window)
 
         label_box = gtk.HBox(False, 0)
