@@ -355,7 +355,7 @@ class MainWindow:
             "FROM stream "\
             "WHERE ((source_id IN (SELECT uid2 FROM friend WHERE uid1 = %d) "\
             "OR source_id = %d) "\
-            "AND created_time  > %d AND created_time < %d "\
+            "AND created_time  > %d AND created_time <= %d "\
             "AND attachment = '' AND target_id = '') "\
             "ORDER BY created_time DESC "\
             "LIMIT 100"
@@ -482,7 +482,7 @@ class MainWindow:
         all_id = ' OR '.join(post_id)
 
         query = ('SELECT post_id, comments, likes FROM stream WHERE ((%s) ' \
-            'AND updated_time > %d AND updated_time < %d)' % \
+            'AND updated_time > %d AND updated_time <= %d)' % \
             (all_id, self._last_update, till))
         _log.debug('Comments & Likes query: %s' % (query))
 
