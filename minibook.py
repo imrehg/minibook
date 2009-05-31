@@ -143,9 +143,9 @@ class _WorkerThread(threading.Thread, _IdleObject):
 class _ThreadManager(object):
     """Manages the threads."""
 
-    def __init__(self, max_threads=2):
+    def __init__(self, max_threads=4):
         """Start the thread pool. The number of threads in the pool is defined
-        by `pool_size`, defaults to 2."""
+        by `pool_size`, defaults to 4."""
         self._max_threads = max_threads
         self._thread_pool = []
         self._running = []
