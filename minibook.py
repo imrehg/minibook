@@ -421,7 +421,7 @@ class MainWindow:
             % (self._prefs['auto_refresh_interval']))
 
     def refresh(self, widget=None):
-        _log.info('Refreshing now at %s' % (time.strftime('%H:%M:%S')))
+        _log.info('Queueing refresh now at %s' % (time.strftime('%H:%M:%S')))
         self._threads.add_work(self.post_get_status_list,
             self.except_get_status_list,
             self.get_status_list)
