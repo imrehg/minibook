@@ -131,7 +131,6 @@ class _WorkerThread(threading.Thread, _IdleObject):
         try:
             result = self._function(*args, **kwargs)
         except Exception, exc:
-            _log.error('Exception %s' % str(exc))
             self.emit("exception", exc)
             return
 
