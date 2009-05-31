@@ -849,7 +849,7 @@ class MainWindow:
         self.statuslist_window = gtk.ScrolledWindow()
         self.statuslist_window.set_policy(gtk.POLICY_NEVER, gtk.POLICY_ALWAYS)
         self.statuslist_window.add(self.treeview)
-        vbox.add(self.statuslist_window)
+        vbox.pack_start(self.statuslist_window, True, True, 0)
 
         label_box = gtk.HBox(False, 0)
         label = gtk.Label("What's on your mind?")
