@@ -212,7 +212,7 @@ class MainWindow:
         end = textfield.get_end_iter()
         entry_text = textfield.get_text(start, end)
         if entry_text != "":
-            _log.info('Sent status update: %s\n' % entry_text)
+            _log.info('Sending status update: %s\n' % entry_text)
             self._facebook.status.set([entry_text], [self._facebook.uid])
 
             textfield.set_text("")
