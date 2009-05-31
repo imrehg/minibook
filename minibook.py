@@ -862,7 +862,7 @@ class MainWindow:
         text.connect('changed', self.count)
         text_box = gtk.VBox(True, 0)
         text_box.pack_start(label_box)
-        text_box.pack_start(self.entry)
+        text_box.pack_start(self.entry, True, True, 2)
 
         update_button = gtk.Button(stock=gtk.STOCK_ADD)
         update_button.connect("clicked", lambda w: self.sendupdate())
