@@ -949,24 +949,32 @@ if __name__ == "__main__":
     _log.debug('Showing Facebook login page in default browser.')
 
     # Delay dialog to allow for login in browser
-    dia = gtk.Dialog('minibook: login',
-        None,
-        gtk.DIALOG_MODAL | \
-        gtk.DIALOG_DESTROY_WITH_PARENT | \
-        gtk.DIALOG_NO_SEPARATOR,
-        ("Logged in", gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
-    label = gtk.Label("%s is opening your web browser to log in Facebook.\n" \
-        "When finished, click 'Logged in', or you can cancel now." % (APPNAME))
-    dia.vbox.pack_start(label, True, True, 10)
-    label.show()
-    dia.show()
-    result = dia.run()
-    if result == gtk.RESPONSE_CANCEL:
-        _log.debug('Exiting before Facebook login.')
-        exit(0)
-    dia.destroy()
-
-    facebook.auth.getSession()
+    got_session = False
+    while not got_session:
+        dia = gtk.Dialog('minibook: login',
+            None,
+            gtk.DIALOG_MODAL | \
+            gtk.DIALOG_DESTROY_WITH_PARENT | \
+            gtk.DIALOG_NO_SEPARATOR,
+            ("Logged in", gtk.RESPONSE_OK, \
+            gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+        label = gtk.Label("%s is opening your web browser to " \
+            "log in Facebook.\nWhen finished, click 'Logged in', " \
+            "or you can cancel now." % (APPNAME))
+        dia.vbox.pack_start(label, True, True, 10)
+        label.show()
+        dia.show()
+        result = dia.run()
+        if result == gtk.RESPONSE_CANCEL:
+            _log.debug('Exiting before Facebook login.')
+            exit(0)
+        dia.destroy()
+        try:
+            facebook.auth.getSession()
+            got_session = True
+        except:
+            pass
+            
     _log.info('Session Key: %s' % (facebook.session_key))
     _log.info('User\'s UID: %d' % (facebook.uid))
 
