@@ -213,9 +213,14 @@ class MainWindow:
         entry_text = textfield.get_text(start, end)
         if entry_text != "":
             _log.info('Sending status update: %s\n' % entry_text)
+            self.statusbar.pop(self.statusbar_context)
+            self.statusbar.push(self.statusbar_context, \
+                "Sending your status update")
             self._facebook.status.set([entry_text], [self._facebook.uid])
 
             textfield.set_text("")
+            self.statusbar.pop(self.statusbar_context)
+
             # wait a little before getting new updates, so FB can catch up
             time.sleep(2)
             self.refresh()
@@ -224,6 +229,9 @@ class MainWindow:
     # Information pulling functions
     #------------------------------
     def get_friends_list(self):
+        self.statusbar.pop(self.statusbar_context)
+        self.statusbar.push(self.statusbar_context, \
+            "Fetching list of friends")
         query = ("SELECT uid, name, pic_square FROM user "\
             "WHERE (uid IN (SELECT uid2 FROM friend WHERE uid1 = %d) "\
             "OR uid = %d)" % (self._facebook.uid, self._facebook.uid))
@@ -240,11 +248,16 @@ class MainWindow:
         _log.info('%s has altogether %d friends in the database.' \
             % (self.friendsname[str(self._facebook.uid)],
             len(self.friendsname.keys())))
+        self.statusbar.pop(self.statusbar_context)
+
         self.refresh()
         return
 
     def except_get_friends_list(self, widget, exception):
         _log.error("Get friends exception: %s" % (str(exception)))
+        self.statusbar.pop(self.statusbar_context)
+        self.statusbar.push(self.statusbar_context, \
+            "Error while fetching friends' list")
 
     def get_status_list(self):
 
@@ -253,6 +266,9 @@ class MainWindow:
         # except_get_status_list, _post_get_cl_list, _except_get_cl_list
         self.update_sema.acquire()
 
+        self.statusbar.pop(self.statusbar_context)
+        self.statusbar.push(self.statusbar_context, \
+            "Fetching status updates")
         if self._last_update > 0:
             since = self._last_update
         else:
@@ -301,6 +317,8 @@ class MainWindow:
             first_path = model.get_path(first_iter)
             self.treeview.scroll_to_cell(first_path)
 
+        self.statusbar.pop(self.statusbar_context)
+
         # pull comments and likes too
         self._threads.add_work(self._post_get_cl_list,
             self._except_get_cl_list,
@@ -310,6 +328,9 @@ class MainWindow:
 
     def except_get_status_list(self, widget, exception):
         _log.error("Get status list exception: %s" % (str(exception)))
+        self.statusbar.pop(self.statusbar_context)
+        self.statusbar.push(self.statusbar_context, \
+            "Error while fetching status updates")
         # Finish, give semaphore back in case anyone's waiting
         self.update_sema.release()
 
@@ -345,6 +366,9 @@ class MainWindow:
     ### get comments and likes
     def _get_cl_list(self, till):
         _log.info('Pulling comments & likes for listed status updates')
+        self.statusbar.pop(self.statusbar_context)
+        self.statusbar.push(self.statusbar_context, \
+            "Fetching comments & likes")
 
         post_id = []
         for row in self.liststore:
@@ -389,6 +413,13 @@ class MainWindow:
 
         self._last_update = till
         _log.info('Finished updating status messages, comments and likes.')
+        self.statusbar.pop(self.statusbar_context)
+
+        # Last update time in human readable format
+        update_time = time.strftime("%H:%M", time.localtime(till))
+        self.statusbar.push(self.statusbar_context, \
+            "Last update at %s" % (update_time))
+
         # Finish, give semaphore back in case anyone's waiting
         self.update_sema.release()
         return
@@ -396,6 +427,9 @@ class MainWindow:
     def _except_get_cl_list(self, widget, exception):
         _log.error('Exception while getting comments and likes')
         _log.error(str(exception))
+        self.statusbar.pop(self.statusbar_context)
+        self.statusbar.push(self.statusbar_context, \
+            "Error while fetching comments & likes")
         # Finish, give semaphore back in case anyone's waiting
         self.update_sema.release()
         return
@@ -844,6 +878,11 @@ class MainWindow:
                 padding=0)
 
         vbox.pack_start(update_box, False, True, 0)
+
+        self.statusbar = gtk.Statusbar()
+        vbox.pack_start(self.statusbar, False, False, 0)
+        self.statusbar_context = self.statusbar.get_context_id(
+                '%s is here.' % (APPNAME))
 
         if spelling_support:
             try:
