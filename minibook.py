@@ -26,6 +26,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
+MAX_MESSAGE_LENGTH = 255
 
 import pygtk
 pygtk.require('2.0')
@@ -212,6 +213,25 @@ class MainWindow:
         end = textfield.get_end_iter()
         entry_text = textfield.get_text(start, end)
         if entry_text != "":
+            # Warn user if status message is too long. If insist, send text
+            if len(entry_text) > MAX_MESSAGE_LENGTH:
+                warning_message = ("Your message is longer than %d " \
+                    "characters and if submitted it is likely to be " \
+                    "truncated by Facebook as:\n\"%s...\"\nInstead of " \
+                    "sending this update, do you want to return to editing?" \
+                    % (MAX_MESSAGE_LENGTH, entry_text[0:251]))
+                warning_dialog = gtk.MessageDialog(parent=self.window,
+                    type=gtk.MESSAGE_WARNING,
+                    flags=gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+                    message_format="Your status update is too long.",
+                    buttons=gtk.BUTTONS_YES_NO)
+                warning_dialog.format_secondary_text(warning_message)
+                response = warning_dialog.run()
+                warning_dialog.destroy()
+                # If user said yes, don't send just return to editing
+                if response == gtk.RESPONSE_YES:
+                    return
+
             _log.info('Sending status update: %s\n' % entry_text)
             self.statusbar.pop(self.statusbar_context)
             self.statusbar.push(self.statusbar_context, \
@@ -441,7 +461,8 @@ class MainWindow:
         start = text.get_start_iter()
         end = text.get_end_iter()
         thetext = text.get_text(start, end)
-        self.count_label.set_text('(%d)' % (160 - len(thetext)))
+        self.count_label.set_text('(%d)' \
+            % (MAX_MESSAGE_LENGTH - len(thetext)))
         return True
 
     def set_auto_refresh(self):
@@ -853,7 +874,7 @@ class MainWindow:
 
         label_box = gtk.HBox(False, 0)
         label = gtk.Label("What's on your mind?")
-        self.count_label = gtk.Label("(160)")
+        self.count_label = gtk.Label("(%d)" % (MAX_MESSAGE_LENGTH))
         label_box.pack_start(label)
         label_box.pack_start(self.count_label)
 
