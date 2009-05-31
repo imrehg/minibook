@@ -1037,6 +1037,12 @@ class MainWindow:
         self.commentspic = gtk.gdk.pixbuf_new_from_file('pixmaps/comments.png')
         self.likespic = gtk.gdk.pixbuf_new_from_file('pixmaps/likes.png')
 
+        self.friendsname = {}
+        self.friendsprofilepic = {}
+        self._profilepics = {}
+        # Semaphore to let only one status update proceed at a time
+        self.update_sema = threading.BoundedSemaphore(value=1)
+
         # create a new window
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.set_size_request(480, 250)
@@ -1045,12 +1051,6 @@ class MainWindow:
 
         vbox = gtk.VBox(False, 0)
         self.window.add(vbox)
-
-        self.friendsname = {}
-        self.friendsprofilepic = {}
-        self._profilepics = {}
-        # Semaphore to let only one status update proceed at a time
-        self.update_sema = threading.BoundedSemaphore(value=1)
 
         # Menubar
         self.create_menubar()
@@ -1118,19 +1118,18 @@ class MainWindow:
         # Enable thread manager
         self._threads = _ThreadManager()
 
-        self.userinfo = self._facebook.users.getInfo([self._facebook.uid], \
-            ['name'])[0]
-        self._last_update = 0
-        self._threads.add_work(self.post_get_friends_list,
-                self.except_get_friends_list,
-                self.get_friends_list)
-
         # Start to set up preferences
         self._prefs = {}
         x, y = self.window.get_position()
         self._prefs['window_pos_x'] = x
         self._prefs['window_pos_y'] = y
         self._prefs['auto_refresh_interval'] = 5
+
+        # Last update: never, start first one
+        self._last_update = 0
+        self._threads.add_work(self.post_get_friends_list,
+                self.except_get_friends_list,
+                self.get_friends_list)
 
         # Enable auto-refresh
         self._refresh_id = None
@@ -1175,8 +1174,8 @@ if __name__ == "__main__":
             "try starting application later")
         exit(1)
 
-    facebook.login()
     _log.debug('Showing Facebook login page in default browser.')
+    facebook.login()
 
     # Delay dialog to allow for login in browser
     got_session = False
