@@ -247,6 +247,12 @@ class MainWindow:
         _log.error("Get friends exception: %s" % (str(exception)))
 
     def get_status_list(self):
+
+        # Halt point, only one status update may proceed at a time
+        # .release() is called at all 3 possible update finish:
+        # except_get_status_list, _post_get_cl_list, _except_get_cl_list
+        self.update_sema.acquire()
+
         if self._last_update > 0:
             since = self._last_update
         else:
@@ -304,6 +310,8 @@ class MainWindow:
 
     def except_get_status_list(self, widget, exception):
         _log.error("Get status list exception: %s" % (str(exception)))
+        # Finish, give semaphore back in case anyone's waiting
+        self.update_sema.release()
 
     ### image download function
     def _dl_profile_pic(self, uid, url):
@@ -380,11 +388,16 @@ class MainWindow:
                 row[Columns.STATUS], row[Columns.DATETIME]))
 
         self._last_update = till
+        _log.info('Finished updating status messages, comments and likes.')
+        # Finish, give semaphore back in case anyone's waiting
+        self.update_sema.release()
         return
 
     def _except_get_cl_list(self, widget, exception):
         _log.error('Exception while getting comments and likes')
         _log.error(str(exception))
+        # Finish, give semaphore back in case anyone's waiting
+        self.update_sema.release()
         return
 
     #-----------------
@@ -793,6 +806,8 @@ class MainWindow:
         self.friendsname = {}
         self.friendsprofilepic = {}
         self._profilepics = {}
+        # Semaphore to let only one status update proceed at a time
+        self.update_sema = threading.BoundedSemaphore(value=1)
 
         self.create_menubar()
         vbox.pack_start(self.main_menu, False, True, 0)
