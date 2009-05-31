@@ -1,7 +1,7 @@
 minibook
 --------
 
-A cross-platform desktop Facebook (FB) status updater and lister 
+A cross-platform desktop Facebook (FB) status updater and lister
 written in Python. Uses PyFacebook to make FB API calls.
 
 
@@ -35,7 +35,7 @@ So, to use this project, you have to do the following:
 
 1) Create a new application on FB
 http://www.facebook.com/developers/
-Set it's type to "desktop".
+Set it's type to "desktop". 
 
 2) On your app's page, note the "API Key" and "Application Secret".
 Put them in a file called "config" in the root directory of minibook. 
@@ -43,14 +43,26 @@ The first line is the "API Key", the second is "Application Secret".
 
 3) Setup the permission for this app to update your status. See:
 http://wiki.developers.facebook.com/index.php/Extended_permission
-More specifically, point your browser to this address:
+More specifically, point your browser to these address:
 http://www.facebook.com/authorize.php?api_key=YOUR_API_KEY&v=1.0&ext_perm=publish_stream
+http://www.facebook.com/authorize.php?api_key=YOUR_API_KEY&v=1.0&ext_perm=read_stream
 where you replace "YOUR_API_KEY" appropriately
 
 4) Install dependencies, specifically PyFacebook
 
 5) Run app, if everythings fine it should start the browser to log you 
-in, after which you can update your profile!
+in, after which you can read your friends' status updates andupdate your
+profile!
+
+
+Inherent limitations
+--------------------
+Facebook privacy settings grately affect the behaviour of this app. If you have
+friends whose updates are not shown but everyone else's are there, or whose
+pictures regularly cannot be displayed, most likely they disabled sharing those
+information with applications. You can check and change your own settings after
+logging into Facebook:
+Menu Bar > Settings > Privacy Settings > Applications > Settings
 
 
 Licensing
