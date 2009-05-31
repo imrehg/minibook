@@ -792,13 +792,12 @@ class MainWindow:
         """
 
         about_window = gtk.AboutDialog()
-        about_window.set_name(APPNAME)
+        about_window.set_program_name(APPNAME)
         about_window.set_version(VERSION)
-        about_window.set_copyright('2009 Gergely Imreh')
+        about_window.set_copyright('2009 Gergely Imreh <imrehg@gmail.com>')
         about_window.set_license(MIT)
         about_window.set_website('http://imrehg.github.com/minibook/')
         about_window.set_website_label('%s on GitHub' % (APPNAME))
-        about_window.set_authors(['Gergely Imreh'])
         about_window.connect('close', self.close_dialog)
         about_window.run()
         about_window.hide()
