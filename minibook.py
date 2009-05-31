@@ -596,7 +596,7 @@ class MainWindow:
         """
 
         uid = store.get_value(position, Columns.UID)
-        name = self.friendsname[str(uid)]
+        name = self.friendsname[uid]
         status = store.get_value(position, Columns.STATUS)
         posttime = store.get_value(position, Columns.DATETIME)
 
