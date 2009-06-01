@@ -44,7 +44,6 @@ import threading
 
 gobject.threads_init()
 gtk.gdk.threads_init()
-gtk.gdk.threads_enter()
 
 try:
     import gtkspell
@@ -1174,6 +1173,7 @@ def main(facebook):
     Main function
     """
 
+    gtk.gdk.threads_enter()
     gtk.main()
     gtk.gdk.threads_leave()
     _log.debug('Exiting')
@@ -1226,7 +1226,9 @@ if __name__ == "__main__":
         dia.vbox.pack_start(label, True, True, 10)
         label.show()
         dia.show()
+        gtk.gdk.threads_enter()
         result = dia.run()
+        gtk.gdk.threads_leave()
         # Cancel login and close app
         if result == gtk.RESPONSE_CANCEL:
             _log.debug('Exiting before Facebook login.')
