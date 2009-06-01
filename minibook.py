@@ -394,6 +394,7 @@ class MainWindow:
             first_iter = model.get_iter_first()
             first_path = model.get_path(first_iter)
             self.treeview.scroll_to_cell(first_path)
+            self.new_status_notify()
 
         self.statusbar.pop(self.statusbar_context)
 
@@ -629,6 +630,30 @@ class MainWindow:
         clipboard = gtk.Clipboard()
         _log.debug('Copying to clipboard: %s' % (text))
         clipboard.set_text(text)
+
+    def new_status_notify(self):
+        """
+        Handle notification upon new status updates
+        """
+
+        # Announce to the rest of the program
+        self.new_notify = True
+        
+        # Set system tray icon to the notification version, if
+        # user is not looking at the window at the moment.
+        if not self.window.get_property('is-active'):
+            self._systray.set_from_pixbuf(self._app_icon_notify)
+
+    def expose_notify(self, widget, event, user=None):
+        """
+        Called when the window is shown
+        """
+
+        # Remove systray notification if there's any and
+        # user checks window: expose_event AND is-active = true
+        if self.new_notify and self.window.get_property('is-active'):
+            self.new_notify = False
+            self._systray.set_from_pixbuf(self._app_icon)
 
     #--------------------
     # Interface functions
@@ -1105,15 +1130,19 @@ class MainWindow:
         self.window.show_all()
 
         # Set up systray icon
-        self._app_icon = 'pixmaps/minibook.png'
+        _app_icon_file = 'pixmaps/minibook.png'
+        _app_icon_notify_file = 'pixmaps/minibook_notify.png'
+        self._app_icon = gtk.gdk.pixbuf_new_from_file(_app_icon_file)
+        self._app_icon_notify = \
+            gtk.gdk.pixbuf_new_from_file(_app_icon_notify_file)
         self._systray = gtk.StatusIcon()
-        self._systray.set_from_file(self._app_icon)
+        self._systray.set_from_pixbuf(self._app_icon)
         self._systray.set_tooltip('%s\n' \
             'Left-click: toggle window hiding' % (APPNAME))
         self._systray.connect('activate', self.systray_click)
         self._systray.set_visible(True)
 
-        self.window.set_icon_from_file(self._app_icon)
+        self.window.set_icon(self._app_icon)
 
         # Enable thread manager
         self._threads = _ThreadManager()
@@ -1135,6 +1164,10 @@ class MainWindow:
         self._refresh_id = None
         self.set_auto_refresh()
 
+        # Storing notification state
+        self.new_notify = False
+        # Used to remove systray notification on window show
+        self.window.connect("expose-event", self.expose_notify)
 
 def main(facebook):
     """
