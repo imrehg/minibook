@@ -637,7 +637,7 @@ class MainWindow:
 
         # Announce to the rest of the program
         self.new_notify = True
-        
+
         # Set system tray icon to the notification version, if
         # user is not looking at the window at the moment.
         if not self.window.get_property('is-active'):
@@ -1167,6 +1167,7 @@ class MainWindow:
         self.new_notify = False
         # Used to remove systray notification on window show
         self.window.connect("expose-event", self.expose_notify)
+
 
 def main(facebook):
     """
