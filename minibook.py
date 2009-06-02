@@ -41,6 +41,7 @@ except:
 import time
 import re
 import threading
+import string
 
 gobject.threads_init()
 gtk.gdk.threads_init()
@@ -560,6 +561,52 @@ class MainWindow:
 
         self.count_label.set_text('(%d)' \
             % (MAX_MESSAGE_LENGTH - text.get_char_count()))
+        return True
+
+    def insert_cb(self, textbuffer, iter, text, length, *args):
+        """
+        Callback when text is typed/inserted into status update box
+        """
+        
+        # Without this garbage comes in with text
+        text = text[:length]
+        # Stop default emission
+        textbuffer.emit_stop_by_name("insert_text")
+        # For some reason cannot pass on iter properly, send pos instead
+        pos = iter.get_offset()
+        self.insert(textbuffer, text, pos)
+
+    def insert(self, textbuffer, text, pos):
+        """
+        Text replacement function upon type into status update box
+        On receiving an "enter" initiate status update send
+        """
+
+        # If "Enter" pressed, submit status
+        if (text == "\n"):
+            self.sendupdate()
+            return True
+
+        # Replacement rules
+        # remove tabs
+        text = string.replace(text, "\t", "")
+        # convert multiple lines into a single line (e.g. when text pasted)
+        text = string.replace(text, "\n", " ")
+
+        # Insert text
+        start = textbuffer.get_start_iter()
+        end = textbuffer.get_end_iter()
+        orig_text = textbuffer.get_text(start, end)
+        new_text = orig_text[:pos] + text + orig_text[pos:]
+
+        # Avoid recursive calls triggered by set_text
+        textbuffer.handler_block(self.insert_sig)
+        # Insert new text and move cursor to end if insert
+        textbuffer.set_text(new_text)
+        iter = textbuffer.get_iter_at_offset(pos+len(text))
+        textbuffer.place_cursor(iter)
+        # Re-enable signal
+        textbuffer.handler_unblock(self.insert_sig)
         return True
 
     def set_auto_refresh(self):
@@ -1094,6 +1141,7 @@ class MainWindow:
         self.entry = gtk.TextView()
         text = self.entry.get_buffer()
         text.connect('changed', self.count)
+        self.insert_sig = text.connect("insert_text", self.insert_cb)
         text_box = gtk.VBox(True, 0)
         text_box.pack_start(label_box)
         text_box.pack_start(self.entry, True, True, 4)
