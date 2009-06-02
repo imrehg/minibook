@@ -558,11 +558,8 @@ class MainWindow:
         Count remaining characters in status update text
         """
 
-        start = text.get_start_iter()
-        end = text.get_end_iter()
-        thetext = text.get_text(start, end)
         self.count_label.set_text('(%d)' \
-            % (MAX_MESSAGE_LENGTH - len(thetext)))
+            % (MAX_MESSAGE_LENGTH - text.get_char_count()))
         return True
 
     def set_auto_refresh(self):
