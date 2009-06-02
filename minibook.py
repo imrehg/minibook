@@ -643,14 +643,14 @@ class MainWindow:
         if not self.window.get_property('is-active'):
             self._systray.set_from_pixbuf(self._app_icon_notify)
 
-    def expose_notify(self, widget, event, user=None):
+    def remove_notify(self, widget, event, user=None):
         """
-        Called when the window is shown
+        Called when the window is shown to remove systray notification
         """
-
+        
         # Remove systray notification if there's any and
         # user checks window: expose_event AND is-active = true
-        if self.new_notify and self.window.get_property('is-active'):
+        if self.new_notify and self.window.is_active():
             self.new_notify = False
             self._systray.set_from_pixbuf(self._app_icon)
 
@@ -1166,7 +1166,7 @@ class MainWindow:
         # Storing notification state
         self.new_notify = False
         # Used to remove systray notification on window show
-        self.window.connect("expose-event", self.expose_notify)
+        self.window.connect("event", self.remove_notify)
 
 
 def main(facebook):
